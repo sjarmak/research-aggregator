@@ -1,0 +1,105 @@
+[dotenv@17.2.3] injecting env (1) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+User: What are recent posts about 'agentic workflows'?
+Agent starting...
+Available tools: [
+  'Bash',
+  'create_file',
+  'edit_file',
+  'finder',
+  'glob',
+  'Grep',
+  'librarian',
+  'mcp__ace_learning_server__ace_analyze_patterns',
+  'mcp__ace_learning_server__ace_capture_trace',
+  'mcp__ace_learning_server__ace_get_insights',
+  'mcp__ace_learning_server__ace_update_knowledge',
+  'mcp__ads_server__ads_get_library_papers',
+  'mcp__ads_server__ads_get_paper',
+  'mcp__ads_server__ads_list_libraries',
+  'mcp__ads_server__ads_search',
+  'mcp__ads_server__get_recent_articles',
+  'mcp__ads_server__get_recent_papers_context',
+  'mcp__ads_server__lookup_personal_papers',
+  'mcp__ads_server__multi_source_research',
+  'mcp__custom_subagents__get_subagent_manifest',
+  'mcp__custom_subagents__invoke_subagent',
+  'mcp__custom_subagents__list_subagents',
+  'mcp__custom_subagents__search_subagents',
+  'mermaid',
+  'oracle',
+  'Read',
+  'read_mcp_resource',
+  'read_thread',
+  'read_web_page',
+  'skill',
+  'Task',
+  'todo_read',
+  'todo_write',
+  'undo_edit',
+  'web_search',
+  'xai_finder',
+  'fast_finder',
+  'kimiK2_finder',
+  'gossip_finder',
+  'sonoma_finder',
+  'edit_plan',
+  'read_plan'
+]
+[Tool Use] mcp__ads_server__multi_source_research({"use_rss":true,"use_local_papers":true,"query":"agentic workflows"})
+
+--- Result ---
+[QUERY_ANALYSIS]
+- **Restatement**: The user is looking for recent content (blogs, articles, papers) specifically discussing "agentic workflows" to understand current trends and definitions.
+- **Domain**: ai_agents
+- **Sub-questions**:
+  1. What are recent examples of "agentic workflows" in industry blogs?
+  2. How is "agentic workflow" defined in recent academic literature (2024-2025)?
+  3. What industries are adopting these workflows?
+[/QUERY_ANALYSIS]
+
+[SEARCH_NOTES]
+- **Tools Used**: `multi_source_research(query="agentic workflows", use_rss=true)`
+- **Key Findings**:
+  - **Software Development (GitLab)**: A major blog post from Oct 2025 details "GitLab 18.5" introducing "agentic workflows" for vulnerability triage and backlog management. It highlights a shift from simple chat to multi-step orchestration. (Relevance: 5/5)
+  - **Geophysics & Energy**: Multiple 2025 papers (EarthArXiv, ADIPEC) discuss "Agentic AI frameworks" for automating complex reservoir characterization. They define these workflows as "collaborative, event-driven multi-agent systems" (e.g., Manager Agents + Worker Agents). (Relevance: 5/5)
+  - **Risk & Governance**: A paper on "Prompting Autonomous Agents... Efficiency Gains or Hidden Liabilities?" highlights the governance risks of these workflows. (Relevance: 4/5)
+[/SEARCH_NOTES]
+
+[REFLECTION]
+- **Coverage**: Excellent. Found both a high-profile software industry example (GitLab) and deep technical implementations in heavy industry (Energy/Geophysics).
+- **Gaps**: None. The contrast between "digital" work (software) and "physical" modeling (oil/gas) provides a comprehensive view of the trend.
+[/REFLECTION]
+
+[FINAL_ANSWER]
+Recent posts and literature from late 2025 highlight a shift in AI development from general-purpose chatbots to **"Agentic Workflows."** These are defined not just as autonomous agents, but as structured, multi-step processes where specialized agents collaborate to complete complex, domain-specific tasks.
+
+### Key Trends & Findings
+
+#### 1. Software Development: Intelligent Orchestration
+In the software sector, "agentic workflows" are being productized to handle tedious maintenance tasks.
+- **GitLab 18.5 (Oct 2025)** introduced native **"Security Analyst Agents"** and **"Planner Agents"**.
+- **How it works**: Instead of a human manually clicking through dashboards, an agent orchestrates multiple tools to triage vulnerabilities (e.g., dismissing false positives based on reachability analysis) or organize backlogs.
+- **Significance**: This moves AI from a "copilot" (helper) to an "orchestrator" (executor of defined workflows).
+
+#### 2. Heavy Industry: The "Manager-Worker" Architecture
+In sectors like Geophysics and Energy, recent papers describe "Agentic AI Frameworks" that mimic human teams to automate scientific analysis.
+- **Structure**: A **"Manager Agent"** breaks down a high-level goal (e.g., "analyze reservoir lithology"). It delegates tasks to specialized **"Worker Agents"** (e.g., Data Finder, Analyst, Reporter) that communicate via a shared workspace.
+- **Application**: ADNOC's "AiPSO" system embeds these agents into engineering workflows to optimize oilfield production, integrating with Digital Twins for real-time decision support.
+
+#### 3. Emerging Risks: "Hidden Liabilities"
+With the rise of these workflows, governance is becoming a critical topic.
+- **The Risk**: As workflows become more autonomous ("loops without escalation triggers"), there is a risk of **liability diffusion**—where it becomes unclear if a human or an agent is responsible for a specific decision.
+- **Recommendation**: Recent literature calls for "risk-graded frameworks" and strict operational boundaries before letting agentic loops execute critical decisions independently.
+
+### Summary of "Agentic Workflow" Definition
+Based on these recent sources, an **Agentic Workflow** is characterized by:
+1. **Specialization**: Agents are not generalists; they are "Data Finders," "Security Analysts," or "Planners."
+2. **Orchestration**: A distinct "Manager" or workflow engine coordinates the hand-offs between agents.
+3. **Tool Use**: Deep integration with external APIs (OSDU, GitLab) rather than just text generation.
+
+**References:**
+- **GitLab Team**. (2025). *GitLab 18.5: Intelligence that moves software development forward*. [GitLab Blog]
+- **Nasim, M. Q., et al.** (2025). *Multi-Agent Geophysical AI Workflow for Automated Reservoir Characterization*. [2025EaArX...X5R16VN]
+- **Mohan, R., et al.** (2025). *Agentic AI for Oilfield Optimization: Bridging Expert Workflows and Generative Intelligence*. [2025adip.conf29325M]
+- **Faccia, A.** (2025). *Prompting Autonomous Agents and LLMs in Energy Operations, Efficiency Gains or Hidden Liabilities?* [2025adip.conf29540F]
+[/FINAL_ANSWER]
