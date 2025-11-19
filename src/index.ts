@@ -30,9 +30,9 @@ async function main() {
       options: {
         dangerouslyAllowAll: true,
         mcpConfig: {
-          "ads-server": {
+          "tools-server": {
             command: "node",
-            args: ["dist/servers/ads-server.js"],
+            args: ["dist/servers/tools-server.js"],
             env: env
           }
         }

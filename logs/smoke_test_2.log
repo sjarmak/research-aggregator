@@ -1,4 +1,4 @@
-[dotenv@17.2.3] injecting env (1) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (1) from .env -- tip: ⚙️  override existing env vars with { override: true }
 User: What are recent posts about 'agentic workflows'?
 Agent starting...
 Available tools: [
@@ -13,18 +13,16 @@ Available tools: [
   'mcp__ace_learning_server__ace_capture_trace',
   'mcp__ace_learning_server__ace_get_insights',
   'mcp__ace_learning_server__ace_update_knowledge',
-  'mcp__ads_server__ads_get_library_papers',
-  'mcp__ads_server__ads_get_paper',
-  'mcp__ads_server__ads_list_libraries',
-  'mcp__ads_server__ads_search',
-  'mcp__ads_server__get_recent_articles',
-  'mcp__ads_server__get_recent_papers_context',
-  'mcp__ads_server__lookup_personal_papers',
-  'mcp__ads_server__multi_source_research',
   'mcp__custom_subagents__get_subagent_manifest',
   'mcp__custom_subagents__invoke_subagent',
   'mcp__custom_subagents__list_subagents',
   'mcp__custom_subagents__search_subagents',
+  'mcp__tools_server__get_recent_articles',
+  'mcp__tools_server__get_recent_papers_context',
+  'mcp__tools_server__lookup_personal_papers',
+  'mcp__tools_server__multi_source_research',
+  'mcp__tools_server__sg_read_file',
+  'mcp__tools_server__sg_search',
   'mermaid',
   'oracle',
   'Read',
@@ -45,61 +43,64 @@ Available tools: [
   'edit_plan',
   'read_plan'
 ]
-[Tool Use] mcp__ads_server__multi_source_research({"use_rss":true,"use_local_papers":true,"query":"agentic workflows"})
+[Tool Use] mcp__tools_server__multi_source_research({"query":"agentic workflows","use_local_papers":true,"use_rss":true})
+[Tool Use] mcp__tools_server__get_recent_articles({"limit":5})
+[Tool Use] read_web_page({"url":"https://blog.langchain.com/customers-servicenow/"})
+[Tool Use] web_search({"objective":"Find recent articles and posts from late 2024 to late 2025 about \"agentic workflows\" and \"agentic patterns\", specifically looking for content by Andrew Ng or major AI engineering blogs.","search_queries":["\"agentic workflows\" recent posts 2024 2025","\"agentic patterns\" ai engineering blog","Andrew Ng agentic workflows 2025"]})
 
 --- Result ---
 [QUERY_ANALYSIS]
-- **Restatement**: The user is looking for recent content (blogs, articles, papers) specifically discussing "agentic workflows" to understand current trends and definitions.
+- **Restatement**: The user wants an overview of recent content (late 2024–2025) concerning "agentic workflows," specifically looking for definitions, patterns, and industry trends.
 - **Domain**: ai_agents
 - **Sub-questions**:
-  1. What are recent examples of "agentic workflows" in industry blogs?
-  2. How is "agentic workflow" defined in recent academic literature (2024-2025)?
-  3. What industries are adopting these workflows?
+  1. What is the foundational definition of "agentic workflows"?
+  2. What are the key design patterns emerging in late 2025?
+  3. How are enterprises adopting these workflows?
 [/QUERY_ANALYSIS]
 
 [SEARCH_NOTES]
-- **Tools Used**: `multi_source_research(query="agentic workflows", use_rss=true)`
+- **Tools Used**: `multi_source_research`, `get_recent_articles`, `web_search`, `read_web_page`
 - **Key Findings**:
-  - **Software Development (GitLab)**: A major blog post from Oct 2025 details "GitLab 18.5" introducing "agentic workflows" for vulnerability triage and backlog management. It highlights a shift from simple chat to multi-step orchestration. (Relevance: 5/5)
-  - **Geophysics & Energy**: Multiple 2025 papers (EarthArXiv, ADIPEC) discuss "Agentic AI frameworks" for automating complex reservoir characterization. They define these workflows as "collaborative, event-driven multi-agent systems" (e.g., Manager Agents + Worker Agents). (Relevance: 5/5)
-  - **Risk & Governance**: A paper on "Prompting Autonomous Agents... Efficiency Gains or Hidden Liabilities?" highlights the governance risks of these workflows. (Relevance: 4/5)
+  - **Andrew Ng (Mar 2024)**: Defined the 4 key patterns: Reflection, Tool Use, Planning, Multi-agent collaboration. He emphasized that "agentic workflows" prompt LLMs multiple times to build higher-quality output rather than zero-shot generation. (Relevance: 5/5)
+  - **Vellum AI (Sep 2025)**: "The 2025 Guide to AI Agent Workflows" categorizes architectures into Single-Agent (CoT, ReAct) and Multi-Agent (Collaborative, Debate). Defines "agentic" as the ability to take initiative and exert control. (Relevance: 5/5)
+  - **GitLab 18.5 Release (Oct 2025)**: Introduces "GitLab Duo Agent Platform" with specific agents (Security Analyst, Planner) that orchestrate tools to automate complex tasks, explicitly using the term "agentic workflows." (Relevance: 5/5)
+  - **McKinsey (Oct 2025) & BCG (Nov 2025)**: Strategic reports on the "Agentic Organization." Discuss shifting from "copilots" to "colleagues" and the need to redesign workflows end-to-end. (Relevance: 4/5)
+  - **LangChain/ServiceNow (Nov 2025)**: Technical case study on using LangGraph for multi-agent orchestration in customer success. (Relevance: 4/5)
 [/SEARCH_NOTES]
 
 [REFLECTION]
-- **Coverage**: Excellent. Found both a high-profile software industry example (GitLab) and deep technical implementations in heavy industry (Energy/Geophysics).
-- **Gaps**: None. The contrast between "digital" work (software) and "physical" modeling (oil/gas) provides a comprehensive view of the trend.
+- **Coverage**: Excellent. I have the theoretical foundation (Ng), technical implementation guides (Vellum, LangChain), commercial product launches (GitLab), and high-level strategy (McKinsey, BCG).
+- **Gaps**: None. The search results cover the evolution from early 2024 concepts to late 2025 applications.
 [/REFLECTION]
 
 [FINAL_ANSWER]
-Recent posts and literature from late 2025 highlight a shift in AI development from general-purpose chatbots to **"Agentic Workflows."** These are defined not just as autonomous agents, but as structured, multi-step processes where specialized agents collaborate to complete complex, domain-specific tasks.
+Recent posts from late 2024 through late 2025 define **"agentic workflows"** as the shift from using LLMs as simple knowledge engines (zero-shot prompts) to using them as iterative problem-solvers that can plan, critique, and execute multi-step tasks.
 
-### Key Trends & Findings
+The concept, popularized by Andrew Ng in early 2024, has evolved by late 2025 into a concrete engineering discipline and a strategic organizational imperative.
 
-#### 1. Software Development: Intelligent Orchestration
-In the software sector, "agentic workflows" are being productized to handle tedious maintenance tasks.
-- **GitLab 18.5 (Oct 2025)** introduced native **"Security Analyst Agents"** and **"Planner Agents"**.
-- **How it works**: Instead of a human manually clicking through dashboards, an agent orchestrates multiple tools to triage vulnerabilities (e.g., dismissing false positives based on reachability analysis) or organize backlogs.
-- **Significance**: This moves AI from a "copilot" (helper) to an "orchestrator" (executor of defined workflows).
+### 1. Core Concept & Design Patterns
+**Andrew Ng** identified four foundational patterns that distinguish agentic workflows from standard prompting [Andrew Ng, 2024]:
+*   **Reflection**: The model critiques its own output (e.g., code or text) to improve quality before finalizing it.
+*   **Tool Use**: The agent determines when to call external functions (web search, code execution) to gather information or take action.
+*   **Planning**: The agent breaks a complex goal into a sequence of sub-steps.
+*   **Multi-agent Collaboration**: Different agent "personas" (e.g., a Coder and a Reviewer) interact to solve a problem.
 
-#### 2. Heavy Industry: The "Manager-Worker" Architecture
-In sectors like Geophysics and Energy, recent papers describe "Agentic AI Frameworks" that mimic human teams to automate scientific analysis.
-- **Structure**: A **"Manager Agent"** breaks down a high-level goal (e.g., "analyze reservoir lithology"). It delegates tasks to specialized **"Worker Agents"** (e.g., Data Finder, Analyst, Reporter) that communicate via a shared workspace.
-- **Application**: ADNOC's "AiPSO" system embeds these agents into engineering workflows to optimize oilfield production, integrating with Digital Twins for real-time decision support.
+By late 2025, **Vellum AI** and other engineering blogs have expanded these into formalized architectures [Vellum, 2025]:
+*   **Single-Agent Reasoning**: Patterns like *Chain-of-Thought (CoT)* and *ReAct* where one model loops through reasoning steps.
+*   **Multi-Agent Architectures**: Systems where a "Supervisor" agent orchestrates specialized sub-agents (e.g., **LangChain's** work with **ServiceNow** using LangGraph [LangChain, 2025]).
 
-#### 3. Emerging Risks: "Hidden Liabilities"
-With the rise of these workflows, governance is becoming a critical topic.
-- **The Risk**: As workflows become more autonomous ("loops without escalation triggers"), there is a risk of **liability diffusion**—where it becomes unclear if a human or an agent is responsible for a specific decision.
-- **Recommendation**: Recent literature calls for "risk-graded frameworks" and strict operational boundaries before letting agentic loops execute critical decisions independently.
+### 2. From "Chatbots" to "Colleagues" (2025 Trends)
+The discourse has shifted from "how to build agents" to "how to integrate them as workforce colleagues."
+*   **Commercial Implementation**: **GitLab's 18.5 release** (Oct 2025) explicitly markets "agentic workflows" that automate entire domains, such as a *Security Analyst Agent* that triages vulnerabilities and a *Planner Agent* that manages backlogs [GitLab, 2025].
+*   **Organizational Shift**: **McKinsey** and **BCG** (Oct/Nov 2025) argue that companies must move beyond "copilots" (assistants) to "agentic organizations" where humans and agents work as a "co-intelligent workforce." This requires redesigning business processes end-to-end rather than just layering AI on top of existing tasks [McKinsey, 2025; BCG, 2025].
 
-### Summary of "Agentic Workflow" Definition
-Based on these recent sources, an **Agentic Workflow** is characterized by:
-1. **Specialization**: Agents are not generalists; they are "Data Finders," "Security Analysts," or "Planners."
-2. **Orchestration**: A distinct "Manager" or workflow engine coordinates the hand-offs between agents.
-3. **Tool Use**: Deep integration with external APIs (OSDU, GitLab) rather than just text generation.
+### 3. Key Takeaway for Engineers
+The consensus across 2025 resources is that **success lies in the workflow, not just the model**. As Andrew Ng famously noted, "GPT-3.5 in an agentic workflow outperforms GPT-4 in a zero-shot prompt." The focus for developers is now on building robust **orchestration layers** (using tools like LangGraph or AutoGen) that allow models to iterate, fail, recover, and collaborate.
 
 **References:**
-- **GitLab Team**. (2025). *GitLab 18.5: Intelligence that moves software development forward*. [GitLab Blog]
-- **Nasim, M. Q., et al.** (2025). *Multi-Agent Geophysical AI Workflow for Automated Reservoir Characterization*. [2025EaArX...X5R16VN]
-- **Mohan, R., et al.** (2025). *Agentic AI for Oilfield Optimization: Bridging Expert Workflows and Generative Intelligence*. [2025adip.conf29325M]
-- **Faccia, A.** (2025). *Prompting Autonomous Agents and LLMs in Energy Operations, Efficiency Gains or Hidden Liabilities?* [2025adip.conf29540F]
+*   **Andrew Ng**: [Agentic Workflows & Design Patterns](https://www.linkedin.com/posts/andrewyng_one-agent-for-many-worlds-cross-species-activity-7179159130325078016-_oXr) (Mar 2024)
+*   **Vellum AI**: [The 2025 Guide to AI Agent Workflows](https://www.vellum.ai/blog/agentic-workflows-emerging-architectures-and-design-patterns) (Sep 2025)
+*   **GitLab**: [GitLab 18.5: Intelligence that moves software development forward](https://about.gitlab.com/blog/gitlab-18-5-intelligence-that-moves-software-development-forward/) (Oct 2025)
+*   **McKinsey**: [Six shifts to build the agentic organization of the future](https://www.mckinsey.com/capabilities/people-and-organizational-performance/our-insights/the-organization-blog/six-shifts-to-build-the-agentic-organization-of-the-future) (Oct 2025)
+*   **LangChain**: [How ServiceNow uses LangSmith for customer success agents](https://blog.langchain.com/customers-servicenow/) (Nov 2025)
 [/FINAL_ANSWER]

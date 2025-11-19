@@ -4,13 +4,13 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { adsClient } from "../lib/ads/client.js";
+import { sgClient } from "../lib/sourcegraph/client.js";
 import { store } from "../lib/store/json-store.js";
 
 // Create server instance
 const server = new Server(
   {
-    name: "ads-server",
+    name: "research-tools",
     version: "1.0.0",
   },
   {
@@ -24,38 +24,6 @@ const server = new Server(
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
-      {
-        name: "ads_search",
-        description: "Search for academic papers in the NASA ADS database",
-        inputSchema: {
-          type: "object",
-          properties: {
-            query: {
-              type: "string",
-              description: "Search query (e.g., 'author:\"Smith, J\" year:2023' or keywords)",
-            },
-            rows: {
-              type: "number",
-              description: "Number of results to return (default: 10)",
-            },
-          },
-          required: ["query"],
-        },
-      },
-      {
-        name: "ads_get_paper",
-        description: "Get details for a specific paper by bibcode",
-        inputSchema: {
-          type: "object",
-          properties: {
-            bibcode: {
-              type: "string",
-              description: "The ADS bibcode of the paper",
-            },
-          },
-          required: ["bibcode"],
-        },
-      },
       {
         name: "get_recent_articles",
         description: "List recent RSS articles relevant to agents/code search/etc. from the knowledge store.",
@@ -88,17 +56,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "multi_source_research",
-        description: "Run a research query against ADS, local papers, and local RSS in parallel and return merged results.",
+        description: "Run a research query against local papers and local RSS in parallel and return merged results.",
         inputSchema: {
           type: "object",
           properties: {
             query: {
               type: "string",
               description: "The search query"
-            },
-            max_ads_results: {
-              type: "number",
-              description: "Max results from ADS (default: 5)"
             },
             use_local_papers: {
               type: "boolean",
@@ -111,28 +75,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ["query"]
         }
-      },
-      {
-        name: "ads_list_libraries",
-        description: "List all ADS libraries owned by the user",
-        inputSchema: {
-          type: "object",
-          properties: {},
-        },
-      },
-      {
-        name: "ads_get_library_papers",
-        description: "Get papers from a specific ADS library",
-        inputSchema: {
-          type: "object",
-          properties: {
-            libraryId: {
-              type: "string",
-              description: "The ID of the library to fetch papers from",
-            },
-          },
-          required: ["libraryId"],
-        },
       },
       {
         name: "lookup_personal_papers",
@@ -150,6 +92,47 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 }
             }
         }
+      },
+      {
+        name: "sg_search",
+        description: "Search for code, repositories, or files using Sourcegraph. Supports standard Sourcegraph queries (e.g. 'type:symbol', 'type:file', 'repo:').",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Sourcegraph search query. Examples: 'repo:my-repo file:^src/ main', 'type:symbol MyClass', 'repo:my-repo file:^src/' (list files)",
+            },
+            pattern_type: {
+              type: "string",
+              description: "Search pattern type: 'literal', 'regexp', or 'structural' (default: 'literal')",
+              enum: ["literal", "regexp", "structural"],
+            },
+          },
+          required: ["query"],
+        },
+      },
+      {
+        name: "sg_read_file",
+        description: "Read a file from a repository using Sourcegraph.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            repository: {
+              type: "string",
+              description: "Repository name (e.g. 'github.com/sourcegraph/sourcegraph')",
+            },
+            path: {
+              type: "string",
+              description: "Path to the file",
+            },
+            revision: {
+              type: "string",
+              description: "Revision (commit SHA, branch, tag) (default: 'HEAD')",
+            },
+          },
+          required: ["repository", "path"],
+        },
       }
     ],
   };
@@ -165,7 +148,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const libraryId = args?.libraryId ? String(args.libraryId) : undefined;
         const limit = args?.limit ? Number(args.limit) : 20;
         
-        let papers = libraryId ? store.getPapersByLibrary(libraryId) : store.getAllPapers();
+        const papers = libraryId ? store.getPapersByLibrary(libraryId) : store.getAllPapers();
         
         // Sort by year desc for relevance
         papers.sort((a, b) => (b.year ? parseInt(b.year) : 0) - (a.year ? parseInt(a.year) : 0));
@@ -227,20 +210,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (name === "multi_source_research") {
         await store.init();
         const query = String(args?.query).toLowerCase();
-        const maxAds = args?.max_ads_results ? Number(args.max_ads_results) : 5;
         const useLocal = args?.use_local_papers !== false; // default true
         const useRss = args?.use_rss !== false; // default true
         
         const tasks = [];
         
-        // 1. ADS Search
-        tasks.push(
-            adsClient.search(query, { rows: maxAds })
-                .then(res => ({ source: 'ads', results: res }))
-                .catch(err => ({ source: 'ads', error: String(err) }))
-        );
-        
-        // 2. Local Papers (Simple text match)
+        // 1. Local Papers (Simple text match)
         if (useLocal) {
             tasks.push(Promise.resolve().then(() => {
                 const matches = store.getAllPapers().filter(p => 
@@ -251,7 +226,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }));
         }
         
-        // 3. RSS Articles (Simple text match)
+        // 2. RSS Articles (Simple text match)
         if (useRss) {
             tasks.push(Promise.resolve().then(() => {
                 const matches = store.getAllArticles().filter(a => 
@@ -281,10 +256,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
     }
 
-    if (name === "ads_search") {
+    if (name === "sg_search") {
       const query = String(args?.query);
-      const rows = args?.rows ? Number(args.rows) : 10;
-      const results = await adsClient.search(query, { rows });
+      const patternType = args?.pattern_type as 'literal' | 'regexp' | 'structural' | undefined;
+      
+      const results = await sgClient.search(query, { patternType });
       
       return {
         content: [
@@ -296,52 +272,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
-    if (name === "ads_get_paper") {
-      const bibcode = String(args?.bibcode);
-      const paper = await adsClient.getPaper(bibcode);
+    if (name === "sg_read_file") {
+      const repository = String(args?.repository);
+      const path = String(args?.path);
+      const revision = args?.revision ? String(args.revision) : 'HEAD';
       
-      if (!paper) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: "Paper not found",
-            },
-          ],
-          isError: true,
-        };
-      }
-
+      const content = await sgClient.readFile(repository, path, revision);
+      
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify(paper, null, 2),
-          },
-        ],
-      };
-    }
-
-    if (name === "ads_list_libraries") {
-      const libraries = await adsClient.getLibraries();
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(libraries, null, 2),
-          },
-        ],
-      };
-    }
-
-    if (name === "ads_get_library_papers") {
-      const libraryId = String(args?.libraryId);
-      const papers = await adsClient.getLibraryPapers(libraryId);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(papers, null, 2),
+            text: content,
           },
         ],
       };

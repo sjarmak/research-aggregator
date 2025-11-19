@@ -4,7 +4,6 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const configSchema = z.object({
-  ADS_API_TOKEN: z.string().optional(),
   SOURCEGRAPH_TOKEN: z.string().optional(),
   SOURCEGRAPH_URL: z.string().default('https://sourcegraph.com'),
   PORT: z.coerce.number().default(3000),
