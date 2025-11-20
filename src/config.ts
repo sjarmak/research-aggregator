@@ -21,7 +21,16 @@ export type Config = z.infer<typeof configSchema>;
 
 const parseConfig = (): Config => {
   try {
-    return configSchema.parse(process.env);
+    const env = { ...process.env };
+    // Support SRC_ACCESS_TOKEN as alias for SOURCEGRAPH_TOKEN
+    if (!env.SOURCEGRAPH_TOKEN && env.SRC_ACCESS_TOKEN) {
+      env.SOURCEGRAPH_TOKEN = env.SRC_ACCESS_TOKEN;
+    }
+    // Support SRC_ENDPOINT as alias for SOURCEGRAPH_URL
+    if (!env.SOURCEGRAPH_URL && env.SRC_ENDPOINT) {
+      env.SOURCEGRAPH_URL = env.SRC_ENDPOINT;
+    }
+    return configSchema.parse(env);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missing = error.issues.map((issue) => issue.path.join('.')).join(', ');
