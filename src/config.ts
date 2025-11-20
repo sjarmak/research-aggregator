@@ -8,6 +8,7 @@ const configSchema = z.object({
   SOURCEGRAPH_URL: z.string().default('https://sourcegraph.com'),
   PORT: z.coerce.number().default(3000),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  LOG_FILE: z.string().default('logs/agent.log'),
 });
 
 export type Config = z.infer<typeof configSchema>;

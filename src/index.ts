@@ -1,6 +1,7 @@
 import { execute } from '@sourcegraph/amp-sdk';
 import { config } from './config.js';
 import { RESEARCHER_SYSTEM_PROMPT } from './agent/prompt.js';
+import { logger } from './lib/logger.js';
 
 async function main() {
   const userQuery = process.argv[2];
@@ -9,13 +10,9 @@ async function main() {
       process.exit(1);
   }
 
-  console.log(`User: ${userQuery}`);
-  console.log("Agent starting...");
-
-  // Verify config usage
-  if (config.LOG_LEVEL === 'debug') {
-      console.log("Debug mode enabled");
-  }
+  // Use logger instead of raw console
+  logger.info(`User Query: ${userQuery}`);
+  logger.info("Agent starting...");
 
   // Prepare environment for MCP server
   const env = Object.fromEntries(
@@ -41,33 +38,36 @@ async function main() {
 
     for await (const message of iterator) {
       if (message.type === 'system' && (message as any).subtype === 'init') {
-          console.log("Available tools:", (message as any).tools);
+          logger.debug("Available tools initialized", { tools: (message as any).tools.map((t: any) => t.name) });
       }
       if (message.type === 'result') {
         if (message.is_error) {
-             console.error("\n--- Error ---");
-             console.error(message.error);
+             logger.error("Execution Error", { error: message.error });
              process.exit(1);
         } else {
+             logger.info("Final Result", { result: message.result });
+             // Also print to stdout for user visibility if they are piping output
              console.log("\n--- Result ---");
              console.log(message.result);
         }
       }
-      // Check for assistant text to show progress, but avoid duplication if it sends full state
-      // For now, we can just log that we received an update
+      // Check for assistant text to show progress
       if (message.type === 'assistant') {
         const msg = message as any;
         if (msg.message?.content) {
-             for (const content of msg.message.content) {
-                 if (content.type === 'tool_use') {
-                     console.log(`[Tool Use] ${content.name}(${JSON.stringify(content.input)})`);
-                 }
-             }
+          for (const content of msg.message.content) {
+            if (content.type === 'tool_use') {
+              logger.info(`Tool Use: ${content.name}`, { input: content.input });
+            } else if (content.type === 'text') {
+               // Streaming thoughts - maybe log as debug or just output to stdout
+               // logger.debug("Thought", { text: content.text });
+            }
+          }
         }
       }
     }
   } catch (error) {
-    console.error("Execution failed:", error);
+    logger.error("Execution failed", { error });
     process.exit(1);
   }
 }

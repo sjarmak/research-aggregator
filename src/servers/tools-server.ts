@@ -6,6 +6,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { sgClient } from "../lib/sourcegraph/client.js";
 import { store } from "../lib/store/json-store.js";
+import { logger } from "../lib/logger.js";
 
 // Create server instance
 const server = new Server(
@@ -22,6 +23,7 @@ const server = new Server(
 
 // List available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
+  logger.debug("Received ListToolsRequest");
   return {
     tools: [
       {
@@ -141,6 +143,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Handle tool execution
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
+  const requestId = Math.random().toString(36).substring(7);
+  
+  logger.info(`[${requestId}] Tool execution started`, { tool: name, args });
 
   try {
     if (name === "lookup_personal_papers") {
@@ -153,12 +158,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Sort by year desc for relevance
         papers.sort((a, b) => (b.year ? parseInt(b.year) : 0) - (a.year ? parseInt(a.year) : 0));
         
-        return {
+        const result = {
             content: [{
                 type: "text",
                 text: JSON.stringify(papers.slice(0, limit), null, 2)
             }]
         };
+        logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+        return result;
     }
 
     if (name === "get_recent_articles") {
@@ -172,7 +179,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             })
             .slice(0, limit);
             
-        return {
+        const result = {
             content: [{
                 type: "text",
                 text: JSON.stringify(articles.map(a => ({
@@ -184,6 +191,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 })), null, 2)
             }]
         };
+        logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+        return result;
     }
 
     if (name === "get_recent_papers_context") {
@@ -199,12 +208,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             `[${p.bibcode}] ${p.title} (${p.year})\nAuthors: ${p.authors.join(', ')}\nAbstract: ${p.abstract || 'N/A'}`
         ).join('\n---\n');
         
-        return {
+        const result = {
             content: [{
                 type: "text",
                 text: context
             }]
         };
+        logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+        return result;
     }
 
     if (name === "multi_source_research") {
@@ -213,7 +224,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const useLocal = args?.use_local_papers !== false; // default true
         const useRss = args?.use_rss !== false; // default true
         
-        const tasks = [];
+        const tasks: Promise<{source: string, results: any} | {source: string, error: any}>[] = [];
         
         // 1. Local Papers (Simple text match)
         if (useLocal) {
@@ -248,12 +259,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
         });
         
-        return {
+        const result = {
             content: [{
                 type: "text",
                 text: JSON.stringify(response, null, 2)
             }]
         };
+        logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+        return result;
     }
 
     if (name === "sg_search") {
@@ -262,7 +275,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       
       const results = await sgClient.search(query, { patternType });
       
-      return {
+      const result = {
         content: [
           {
             type: "text",
@@ -270,6 +283,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           },
         ],
       };
+      logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+      return result;
     }
 
     if (name === "sg_read_file") {
@@ -279,7 +294,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       
       const content = await sgClient.readFile(repository, path, revision);
       
-      return {
+      const result = {
         content: [
           {
             type: "text",
@@ -287,11 +302,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           },
         ],
       };
+      logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+      return result;
     }
 
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error(`[${requestId}] Tool execution failed`, { tool: name, error: errorMessage });
     return {
       content: [
         {
@@ -307,6 +325,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Connect transport
 const transport = new StdioServerTransport();
 server.connect(transport).catch((error) => {
-  console.error("Server connection error:", error);
+  logger.error("Server connection error", { error });
   process.exit(1);
 });
