@@ -5,6 +5,38 @@ import { store } from "../store/json-store.js";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
+// Schema definitions for tool arguments
+const GetRecentArticlesSchema = z.object({
+  limit: z.coerce.number().optional(),
+});
+
+const GetRecentPapersContextSchema = z.object({
+  limit: z.coerce.number().optional(),
+  libraryId: z.string().optional(),
+});
+
+const MultiSourceResearchSchema = z.object({
+  query: z.string(),
+  use_local_papers: z.boolean().optional(),
+  use_rss: z.boolean().optional(),
+});
+
+const LookupPersonalPapersSchema = z.object({
+  libraryId: z.string().optional(),
+  limit: z.coerce.number().optional(),
+});
+
+const SgSearchSchema = z.object({
+  query: z.string(),
+  pattern_type: z.enum(["literal", "regexp", "structural"]).optional(),
+});
+
+const SgReadFileSchema = z.object({
+  repository: z.string(),
+  path: z.string(),
+  revision: z.string().optional(),
+});
+
 export const toolDefinitions = [
   {
     name: "get_recent_articles",
@@ -123,9 +155,10 @@ export async function handleToolCall(name: string, args: any, requestId: string 
 
     try {
         if (name === "lookup_personal_papers") {
+            const parsed = LookupPersonalPapersSchema.parse(args);
             await store.init();
-            const libraryId = args?.libraryId ? String(args.libraryId) : undefined;
-            const limit = args?.limit ? Number(args.limit) : config.DEFAULT_CONTEXT_LIMIT;
+            const libraryId = parsed.libraryId;
+            const limit = parsed.limit || config.DEFAULT_CONTEXT_LIMIT;
             
             const papers = libraryId ? store.getPapersByLibrary(libraryId) : store.getAllPapers();
             
@@ -143,8 +176,9 @@ export async function handleToolCall(name: string, args: any, requestId: string 
         }
     
         if (name === "get_recent_articles") {
+            const parsed = GetRecentArticlesSchema.parse(args);
             await store.init();
-            const limit = args?.limit ? Number(args.limit) : config.DEFAULT_SEARCH_LIMIT;
+            const limit = parsed.limit || config.DEFAULT_SEARCH_LIMIT;
             const articles = store.getAllArticles()
                 .sort((a, b) => {
                     const tA = new Date(a.publishedAt || a.ingestedAt || 0).getTime();
@@ -170,9 +204,10 @@ export async function handleToolCall(name: string, args: any, requestId: string 
         }
     
         if (name === "get_recent_papers_context") {
+            const parsed = GetRecentPapersContextSchema.parse(args);
             await store.init();
-            const limit = args?.limit ? Number(args.limit) : config.DEFAULT_SEARCH_LIMIT;
-            const libraryId = args?.libraryId ? String(args.libraryId) : undefined;
+            const limit = parsed.limit || config.DEFAULT_SEARCH_LIMIT;
+            const libraryId = parsed.libraryId;
             
             let papers = libraryId ? store.getPapersByLibrary(libraryId) : store.getAllPapers();
             papers = papers.sort((a, b) => new Date(b.ingestedAt).getTime() - new Date(a.ingestedAt).getTime())
@@ -193,10 +228,11 @@ export async function handleToolCall(name: string, args: any, requestId: string 
         }
     
         if (name === "multi_source_research") {
+            const parsed = MultiSourceResearchSchema.parse(args);
             await store.init();
-            const query = String(args?.query).toLowerCase();
-            const useLocal = args?.use_local_papers !== false; // default true
-            const useRss = args?.use_rss !== false; // default true
+            const query = parsed.query.toLowerCase();
+            const useLocal = parsed.use_local_papers !== false; // default true
+            const useRss = parsed.use_rss !== false; // default true
             
             const tasks: Promise<{source: string, results: any} | {source: string, error: any}>[] = [];
             
@@ -244,8 +280,9 @@ export async function handleToolCall(name: string, args: any, requestId: string 
         }
     
         if (name === "sg_search") {
-          const query = String(args?.query);
-          const patternType = args?.pattern_type as 'literal' | 'regexp' | 'structural' | undefined;
+          const parsed = SgSearchSchema.parse(args);
+          const query = parsed.query;
+          const patternType = parsed.pattern_type;
           
           const results = await sgClient.search(query, { patternType });
           
@@ -262,9 +299,10 @@ export async function handleToolCall(name: string, args: any, requestId: string 
         }
     
         if (name === "sg_read_file") {
-          const repository = String(args?.repository);
-          const path = String(args?.path);
-          const revision = args?.revision ? String(args.revision) : 'HEAD';
+          const parsed = SgReadFileSchema.parse(args);
+          const repository = parsed.repository;
+          const path = parsed.path;
+          const revision = parsed.revision || 'HEAD';
           
           const content = await sgClient.readFile(repository, path, revision);
           
@@ -282,6 +320,18 @@ export async function handleToolCall(name: string, args: any, requestId: string 
     
         throw new Error(`Unknown tool: ${name}`);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            const issues = error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
+            logger.error(`[${requestId}] Invalid arguments for ${name}`, { error: issues });
+             return {
+                content: [{
+                    type: "text",
+                    text: `Invalid arguments: ${issues}`
+                }],
+                isError: true
+            };
+        }
+
         const errorMessage = error instanceof Error ? error.message : String(error);
         let userMessage = `Error executing ${name}: ${errorMessage}`;
     
