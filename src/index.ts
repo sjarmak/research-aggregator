@@ -67,7 +67,14 @@ async function main() {
       }
     }
   } catch (error) {
-    logger.error("Execution failed", { error });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("Execution failed", { error: errorMessage });
+    
+    if (errorMessage.includes("connection") || errorMessage.includes("tools-server")) {
+       console.error("\n❌ Error: Connection to tools server failed. Please check logs/agent.log for details.");
+    } else {
+       console.error("\n❌ Error: Execution failed. See logs/agent.log for details.");
+    }
     process.exit(1);
   }
 }

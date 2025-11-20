@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { config } from '../../config.js';
+import { logger } from '../logger.js';
 
 export interface SearchOptions {
   patternType?: 'literal' | 'regexp' | 'structural';
@@ -63,7 +64,7 @@ export class SourcegraphClient {
   async search(query: string, options: SearchOptions = {}): Promise<SearchResponse> {
     this.ensureToken();
 
-    try {
+    const operation = async () => {
       const response = await this.client.post('/.api/graphql', {
         query: SEARCH_QUERY,
         variables: {
@@ -75,7 +76,12 @@ export class SourcegraphClient {
       if (response.data.errors) {
         throw new Error(`GraphQL Error: ${JSON.stringify(response.data.errors)}`);
       }
+      
+      return response;
+    };
 
+    try {
+      const response = await this.makeRequest(operation);
       const rawResults = response.data.data.search.results.results;
       const results: FileMatch[] = rawResults
         .filter((r: any) => r.__typename === 'FileMatch')
@@ -112,7 +118,7 @@ export class SourcegraphClient {
       }
     `;
 
-    try {
+    const operation = async () => {
       const response = await this.client.post('/.api/graphql', {
         query,
         variables: {
@@ -126,6 +132,11 @@ export class SourcegraphClient {
         throw new Error(`GraphQL Error: ${JSON.stringify(response.data.errors)}`);
       }
 
+      return response;
+    };
+
+    try {
+      const response = await this.makeRequest(operation);
       const content = response.data.data.repository?.commit?.blob?.content;
       if (content === undefined) {
         throw new Error(`File not found: ${repository}@${revision}/${path}`);
@@ -135,6 +146,34 @@ export class SourcegraphClient {
     } catch (error) {
       this.handleError(error);
     }
+  }
+
+  private async makeRequest<T>(operation: () => Promise<T>, retryCount = 0): Promise<T> {
+    const MAX_RETRIES = config.API_MAX_RETRIES;
+    const INITIAL_DELAY_MS = config.API_RETRY_DELAY;
+
+    try {
+      return await operation();
+    } catch (error) {
+      if (this.isTransientError(error) && retryCount < MAX_RETRIES) {
+        const delay = INITIAL_DELAY_MS * Math.pow(2, retryCount);
+        logger.warn(`Sourcegraph API request failed. Retrying in ${delay}ms... (Attempt ${retryCount + 1}/${MAX_RETRIES})`, { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.makeRequest(operation, retryCount + 1);
+      }
+      throw error;
+    }
+  }
+
+  private isTransientError(error: unknown): boolean {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      // Retry on network errors (no response) or 5xx/429 status codes
+      return !error.response || (status !== undefined && (status >= 500 || status === 429));
+    }
+    return false;
   }
 
   private ensureToken() {

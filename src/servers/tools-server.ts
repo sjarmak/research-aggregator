@@ -4,6 +4,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { config } from "../config.js";
 import { sgClient } from "../lib/sourcegraph/client.js";
 import { store } from "../lib/store/json-store.js";
 import { logger } from "../lib/logger.js";
@@ -151,7 +152,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (name === "lookup_personal_papers") {
         await store.init();
         const libraryId = args?.libraryId ? String(args.libraryId) : undefined;
-        const limit = args?.limit ? Number(args.limit) : 20;
+        const limit = args?.limit ? Number(args.limit) : config.DEFAULT_CONTEXT_LIMIT;
         
         const papers = libraryId ? store.getPapersByLibrary(libraryId) : store.getAllPapers();
         
@@ -170,7 +171,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     if (name === "get_recent_articles") {
         await store.init();
-        const limit = args?.limit ? Number(args.limit) : 10;
+        const limit = args?.limit ? Number(args.limit) : config.DEFAULT_SEARCH_LIMIT;
         const articles = store.getAllArticles()
             .sort((a, b) => {
                 const tA = new Date(a.publishedAt || a.ingestedAt || 0).getTime();
@@ -197,7 +198,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     if (name === "get_recent_papers_context") {
         await store.init();
-        const limit = args?.limit ? Number(args.limit) : 10;
+        const limit = args?.limit ? Number(args.limit) : config.DEFAULT_SEARCH_LIMIT;
         const libraryId = args?.libraryId ? String(args.libraryId) : undefined;
         
         let papers = libraryId ? store.getPapersByLibrary(libraryId) : store.getAllPapers();
@@ -232,7 +233,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const matches = store.getAllPapers().filter(p => 
                     p.title.toLowerCase().includes(query) || 
                     (p.abstract && p.abstract.toLowerCase().includes(query))
-                ).slice(0, 10); // limit local matches
+                ).slice(0, config.DEFAULT_SEARCH_LIMIT); // limit local matches
                 return { source: 'local_papers', results: matches };
             }));
         }
@@ -243,7 +244,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const matches = store.getAllArticles().filter(a => 
                     a.title.toLowerCase().includes(query) || 
                     (a.summary && a.summary.toLowerCase().includes(query))
-                ).slice(0, 10);
+                ).slice(0, config.DEFAULT_SEARCH_LIMIT);
                 return { source: 'rss_articles', results: matches };
             }));
         }
@@ -309,12 +310,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     throw new Error(`Unknown tool: ${name}`);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    let userMessage = `Error executing ${name}: ${errorMessage}`;
+
+    // Improve error message for common Sourcegraph API errors
+    if (errorMessage.includes('Sourcegraph API Error')) {
+        if (errorMessage.includes('401')) {
+            userMessage = `Authentication failed for ${name}. Please check your SOURCEGRAPH_TOKEN.`;
+        } else if (errorMessage.includes('404')) {
+            userMessage = `Resource not found for ${name}. Verify the repository or file path.`;
+        } else if (errorMessage.includes('429')) {
+             userMessage = `Rate limit exceeded for ${name}. Please try again later.`;
+        }
+    }
+
     logger.error(`[${requestId}] Tool execution failed`, { tool: name, error: errorMessage });
     return {
       content: [
         {
           type: "text",
-          text: `Error executing ${name}: ${errorMessage}`,
+          text: userMessage,
         },
       ],
       isError: true,

@@ -1,21 +1,19 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { config } from '../../config.js';
 import { KnowledgeStore, KnowledgeStoreSchema, Paper, ExternalArticle } from './schema.js';
-
-const DATA_DIR = 'data';
-const STORE_FILE = 'knowledge-store.json';
 
 export class JsonStore {
   private filePath: string;
   private data: KnowledgeStore = { papers: [], articles: [], lastSync: new Date().toISOString() };
 
   constructor() {
-    this.filePath = path.join(process.cwd(), DATA_DIR, STORE_FILE);
+    this.filePath = path.join(process.cwd(), config.DATA_DIR, config.STORE_FILENAME);
   }
 
   async init() {
     try {
-      await fs.mkdir(path.join(process.cwd(), DATA_DIR), { recursive: true });
+      await fs.mkdir(path.join(process.cwd(), config.DATA_DIR), { recursive: true });
       const content = await fs.readFile(this.filePath, 'utf-8');
       // Parse with Zod but handle missing fields if schema evolved
       const parsed = JSON.parse(content);

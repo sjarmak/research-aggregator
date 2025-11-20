@@ -9,6 +9,15 @@
 ## Code Style
 *No code style detected.*
 
+## Error Handling & Logging
+
+- **Retry Logic**: Network requests should use the `makeRequest` pattern (in `client.ts`) with exponential backoff for transient errors (5xx, 429, network failures).
+- **Structured Logging**: Use `src/lib/logger.ts` for all logging.
+  - `logger.info`: General progress and tool usage.
+  - `logger.warn`: Transient failures, retries, and non-critical issues.
+  - `logger.error`: Critical failures that might stop the agent or a tool.
+- **User Feedback**: Tool errors should return descriptive messages to the model (e.g., "Authentication failed") rather than raw stack traces.
+
 ## Deep Search CLI (ds)
 
 The `ds` CLI tool provides programmatic access to Sourcegraph Deep Search for AI-powered codebase analysis.
