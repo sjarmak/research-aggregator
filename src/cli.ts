@@ -3,10 +3,11 @@ import { Command } from 'commander';
 import { ingestRssFeeds } from './lib/ingest/rss-ingest.js';
 import { ingestRecentPapers } from './lib/ingest/ads-ingest.js';
 import { generateNewsletter } from './lib/newsletter/generator.js';
-import { shareOnSlack } from './lib/newsletter/slack.js';
+import { shareOnSlack, convertToSlackMrkdwn } from './lib/newsletter/slack.js';
 import { logger } from './lib/logger.js';
 import fs from 'fs/promises';
 import path from 'path';
+import { mdToPdf } from 'md-to-pdf';
 
 const program = new Command();
 
@@ -47,8 +48,10 @@ program.command('ingest')
 program.command('generate')
   .description('Generate newsletter from ingested content')
   .option('-d, --days <number>', 'Days to look back', '7')
-  .option('-o, --output <path>', 'Output file path')
+  .option('-o, --output <path>', 'Output file path (markdown)')
   .option('-s, --slack <channel>', 'Share to Slack channel (e.g. #research-updates)')
+  .option('--pdf', 'Generate PDF export')
+  .option('--slack-text', 'Generate Slack-compatible text file')
   .action(async (options) => {
       try {
           const days = parseInt(options.days);
@@ -66,6 +69,21 @@ program.command('generate')
           await fs.writeFile(outputPath, content, 'utf-8');
           logger.info(`Newsletter saved to ${outputPath}`);
           console.log(`\n✅ Newsletter generated: ${outputPath}`);
+
+          if (options.pdf) {
+              const pdfPath = outputPath.replace(/\.md$/, '.pdf');
+              logger.info(`Generating PDF: ${pdfPath}`);
+              await mdToPdf({ content }, { dest: pdfPath });
+              console.log(`\n✅ PDF export: ${pdfPath}`);
+          }
+
+          if (options.slackText) {
+              const slackPath = outputPath.replace(/\.md$/, '.slack.txt');
+              const slackContent = convertToSlackMrkdwn(content);
+              await fs.writeFile(slackPath, slackContent, 'utf-8');
+              logger.info(`Slack text saved to ${slackPath}`);
+              console.log(`\n✅ Slack-ready text export: ${slackPath}`);
+          }
 
           if (options.slack) {
               await shareOnSlack(content, options.slack);
