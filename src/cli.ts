@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Command } from 'commander';
 import { ingestRssFeeds } from './lib/ingest/rss-ingest.js';
 import { ingestRecentPapers } from './lib/ingest/ads-ingest.js';

@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": {
+    "research-agent": "./dist/cli.js"
+  },
   "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "cli": "node dist/cli.js",
+    "agent": "node dist/cli.js",
     "lint": "eslint src/**/*.ts",
     "test": "vitest run",
     "test:integration": "RUN_INTEGRATION_TESTS=true vitest run src/lib/sourcegraph/client.integration.test.ts"
