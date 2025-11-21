@@ -2,6 +2,24 @@ import { WebClient } from '@slack/web-api';
 import { config } from '../../config.js';
 import { logger } from '../logger.js';
 
+function convertToSlackMrkdwn(text: string): string {
+    let slackText = text;
+    
+    // Convert links: [text](url) -> <url|text>
+    slackText = slackText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<$2|$1>');
+    
+    // Convert bold: **text** -> *text*
+    slackText = slackText.replace(/\*\*([^*]+)\*\*/g, '*$1*');
+    
+    // Convert headers: ### Title -> *Title*
+    slackText = slackText.replace(/^#{1,6}\s+(.+)$/gm, '*$1*');
+    
+    // Convert list items: - item -> • item
+    slackText = slackText.replace(/^\s*-\s/gm, '• ');
+
+    return slackText;
+}
+
 export async function shareOnSlack(markdownContent: string, channel: string = '#research-updates') {
     if (!config.SLACK_TOKEN) {
         logger.warn('SLACK_TOKEN not configured. Skipping Slack sharing.');
@@ -13,14 +31,16 @@ export async function shareOnSlack(markdownContent: string, channel: string = '#
     try {
         logger.info(`Sharing newsletter to Slack channel: ${channel}`);
         
-        // Slack's block kit has a limit of 3000 chars per text block. 
-        // We'll split by sections or just post as a simple message for now, 
-        // or maybe upload as a snippet/file if it's too long.
-        // Ideally, we post the TL;DR as a message and the full content as a thread or file.
-        
+        // Convert content to Slack-friendly format
+        const slackContent = convertToSlackMrkdwn(markdownContent);
+
         // Let's split into TL;DR and the rest.
-        const parts = markdownContent.split('\n---');
-        const tldr = parts[0] || markdownContent;
+        // Note: split logic might need adjustment if headers changed, 
+        // but we kept the structure mostly text.
+        // However, our converter changed '---' (hr) to '---'? It didn't touch it.
+        
+        const parts = slackContent.split('\n---');
+        const tldr = parts[0] || slackContent;
         const details = parts.slice(1).join('\n---');
 
         // Post TL;DR
@@ -47,7 +67,6 @@ export async function shareOnSlack(markdownContent: string, channel: string = '#
 
         if (details && result.ts) {
             // Post details in thread
-            // We might need to split details if it's too long
             const CHUNK_SIZE = 3000;
             const chunks = [];
             for (let i = 0; i < details.length; i += CHUNK_SIZE) {
