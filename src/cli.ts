@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { ingestRssFeeds } from './lib/ingest/rss-ingest.js';
 import { ingestRecentPapers } from './lib/ingest/ads-ingest.js';
 import { generateNewsletter } from './lib/newsletter/generator.js';
+import { shareOnSlack } from './lib/newsletter/slack.js';
 import { logger } from './lib/logger.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -47,6 +48,7 @@ program.command('generate')
   .description('Generate newsletter from ingested content')
   .option('-d, --days <number>', 'Days to look back', '7')
   .option('-o, --output <path>', 'Output file path')
+  .option('-s, --slack <channel>', 'Share to Slack channel (e.g. #research-updates)')
   .action(async (options) => {
       try {
           const days = parseInt(options.days);
@@ -64,6 +66,12 @@ program.command('generate')
           await fs.writeFile(outputPath, content, 'utf-8');
           logger.info(`Newsletter saved to ${outputPath}`);
           console.log(`\n✅ Newsletter generated: ${outputPath}`);
+
+          if (options.slack) {
+              await shareOnSlack(content, options.slack);
+              console.log(`\n✅ Shared to Slack channel: ${options.slack}`);
+          }
+
       } catch (error) {
           logger.error('Generation failed', { error: String(error) });
           process.exit(1);

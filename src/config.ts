@@ -18,6 +18,7 @@ const configSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o'),
   ADS_TOKEN: z.string().optional(),
+  SLACK_TOKEN: z.string().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;

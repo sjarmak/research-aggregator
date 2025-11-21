@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.22.0",
+    "@slack/web-api": "^7.12.0",
     "@sourcegraph/amp-sdk": "^0.1.0-20251029183144-g02378e6",
     "axios": "^1.13.2",
     "cheerio": "^1.1.2",
