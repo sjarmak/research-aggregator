@@ -2,8 +2,15 @@ import Parser from 'rss-parser';
 import { store } from '../store/json-store.js';
 import { ExternalArticle } from '../store/schema.js';
 import crypto from 'crypto';
+import { logger } from '../logger.js';
+import { config } from '../../config.js';
 
-const parser = new Parser();
+const parser = new Parser({
+  timeout: 10000,
+  headers: {
+    'User-Agent': 'ResearchAgent/1.0'
+  }
+});
 
 // Configuration for RSS feeds
 const RSS_FEEDS = [
@@ -82,8 +89,56 @@ function shouldIngest(item: any, feedName: string): boolean {
   return true;
 }
 
+function isTransientError(error: unknown): boolean {
+  const msg = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  
+  // Check for common network error codes/messages
+  if (
+    msg.includes('econnreset') || 
+    msg.includes('etimedout') || 
+    msg.includes('eai_again') || 
+    msg.includes('timeout') ||
+    msg.includes('socket hang up') ||
+    msg.includes('network error')
+  ) {
+    return true;
+  }
+
+  // Check for HTTP status codes in message if they bubble up
+  if (
+    msg.includes('status code 429') || 
+    msg.includes('status code 500') || 
+    msg.includes('status code 502') || 
+    msg.includes('status code 503') || 
+    msg.includes('status code 504')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+async function fetchFeedWithRetry(url: string, feedName: string, retryCount = 0): Promise<any> {
+  const MAX_RETRIES = config.API_MAX_RETRIES;
+  const INITIAL_DELAY_MS = config.API_RETRY_DELAY;
+
+  try {
+    return await parser.parseURL(url);
+  } catch (error) {
+    if (isTransientError(error) && retryCount < MAX_RETRIES) {
+      const delay = INITIAL_DELAY_MS * Math.pow(2, retryCount);
+      logger.warn(`RSS fetch failed for ${feedName}. Retrying in ${delay}ms... (Attempt ${retryCount + 1}/${MAX_RETRIES})`, { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchFeedWithRetry(url, feedName, retryCount + 1);
+    }
+    throw error;
+  }
+}
+
 export async function ingestRssFeeds() {
-  console.log('Starting RSS ingestion with smart filters...');
+  logger.info('Starting RSS ingestion with smart filters...');
   await store.init();
   
   const newArticles: ExternalArticle[] = [];
@@ -95,12 +150,9 @@ export async function ingestRssFeeds() {
   for (let i = 0; i < RSS_FEEDS.length; i += BATCH_SIZE) {
       const batch = RSS_FEEDS.slice(i, i + BATCH_SIZE);
       await Promise.all(batch.map(async (feed) => {
-        console.log(`Fetching feed: ${feed.name} (${feed.url})`);
+        logger.info(`Fetching feed: ${feed.name} (${feed.url})`);
         try {
-          // Add timeout via custom headers/request options if supported by rss-parser, 
-          // or just race a promise if not. rss-parser uses http/https under the hood.
-          // For simplicity, we'll just rely on the parser but run in parallel.
-          const result = await parser.parseURL(feed.url);
+          const result = await fetchFeedWithRetry(feed.url, feed.name);
           
           for (const item of result.items) {
             if (!item.link) continue;
@@ -138,15 +190,15 @@ export async function ingestRssFeeds() {
             existingUrls.add(article.url);
           }
         } catch (error) {
-          console.error(`Failed to fetch feed ${feed.name}:`, error instanceof Error ? error.message : String(error));
+          logger.error(`Failed to fetch feed ${feed.name}:`, { error: error instanceof Error ? error.message : String(error) });
         }
       }));
   }
 
-  console.log(`Fetched ${newArticles.length} NEW relevant articles from RSS.`);
-  console.log(`Skipped ${skippedCount} articles (duplicate, too old, or irrelevant).`);
+  logger.info(`Fetched ${newArticles.length} NEW relevant articles from RSS.`);
+  logger.info(`Skipped ${skippedCount} articles (duplicate, too old, or irrelevant).`);
   
   // Save to store
   await store.addArticles(newArticles);
-  console.log('RSS ingestion complete.');
+  logger.info('RSS ingestion complete.');
 }

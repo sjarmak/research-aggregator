@@ -3,6 +3,7 @@ import { handleToolCall } from './registry.js';
 import { sgClient } from '../sourcegraph/client.js';
 import { store } from '../store/json-store.js';
 import { config } from '../../config.js';
+import { generateCompletion } from '../llm/client.js';
 
 // Mock the dependencies
 vi.mock('../sourcegraph/client.js', () => ({
@@ -19,6 +20,10 @@ vi.mock('../store/json-store.js', () => ({
     getPapersByLibrary: vi.fn(),
     getAllArticles: vi.fn(),
   },
+}));
+
+vi.mock('../llm/client.js', () => ({
+  generateCompletion: vi.fn(),
 }));
 
 describe('Tool Registry', () => {
@@ -121,6 +126,32 @@ describe('Tool Registry', () => {
           const result = await handleToolCall('multi_source_research', {});
           expect(result.isError).toBe(true);
           expect(result.content[0].text).toMatch(/query: (Required|Invalid input)/);
+      });
+
+      it('should call generateCompletion when synthesize is true', async () => {
+          (store.getAllPapers as any).mockReturnValue([{ title: 'Paper 1' }]);
+          (store.getAllArticles as any).mockReturnValue([{ title: 'Article 1' }]);
+          (generateCompletion as any).mockResolvedValue('Synthesized Summary');
+
+          const result = await handleToolCall('multi_source_research', { query: '1', synthesize: true });
+          
+          const content = JSON.parse(result.content[0].text);
+          expect(content.local_papers).toHaveLength(1);
+          expect(content.rss_articles).toHaveLength(1);
+          expect(content.synthesis).toBe('Synthesized Summary');
+          expect(generateCompletion).toHaveBeenCalled();
+      });
+
+      it('should handle synthesis errors gracefully', async () => {
+          (store.getAllPapers as any).mockReturnValue([{ title: 'Paper 1' }]);
+          (generateCompletion as any).mockRejectedValue(new Error('LLM Error'));
+
+          const result = await handleToolCall('multi_source_research', { query: '1', synthesize: true });
+          
+          const content = JSON.parse(result.content[0].text);
+          expect(content.synthesis_error).toContain('Failed to generate synthesis');
+          // Should still return results
+          expect(content.local_papers).toHaveLength(1);
       });
   });
 });

@@ -2,6 +2,7 @@ import { logger } from "../logger.js";
 import { config } from "../../config.js";
 import { sgClient } from "../sourcegraph/client.js";
 import { store } from "../store/json-store.js";
+import { generateCompletion } from "../llm/client.js";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
@@ -19,6 +20,11 @@ const MultiSourceResearchSchema = z.object({
   query: z.string(),
   use_local_papers: z.boolean().optional(),
   use_rss: z.boolean().optional(),
+  synthesize: z.boolean().optional(),
+});
+
+const GenerateNewsletterSchema = z.object({
+  days: z.coerce.number().default(7),
 });
 
 const LookupPersonalPapersSchema = z.object({
@@ -85,9 +91,26 @@ export const toolDefinitions = [
         use_rss: {
           type: "boolean",
           description: "Include results from local RSS articles (default: true)"
+        },
+        synthesize: {
+          type: "boolean",
+          description: "Use an LLM to synthesize the results into a coherent summary (requires OPENAI_API_KEY)"
         }
       },
       required: ["query"]
+    }
+  },
+  {
+    name: "generate_newsletter",
+    description: "Generate a weekly newsletter summarizing recent academic research and industry articles from the knowledge store.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "number",
+          description: "Number of days to look back (default: 7)"
+        }
+      }
     }
   },
   {
@@ -233,27 +256,30 @@ export async function handleToolCall(name: string, args: any, requestId: string 
             const query = parsed.query.toLowerCase();
             const useLocal = parsed.use_local_papers !== false; // default true
             const useRss = parsed.use_rss !== false; // default true
+            const synthesize = parsed.synthesize === true;
             
             const tasks: Promise<{source: string, results: any} | {source: string, error: any}>[] = [];
             
-            // 1. Local Papers (Simple text match)
+            // 1. Local Papers (Simple keyword match)
             if (useLocal) {
                 tasks.push(Promise.resolve().then(() => {
-                    const matches = store.getAllPapers().filter(p => 
-                        p.title.toLowerCase().includes(query) || 
-                        (p.abstract && p.abstract.toLowerCase().includes(query))
-                    ).slice(0, config.DEFAULT_SEARCH_LIMIT); // limit local matches
+                    const terms = query.split(/\s+/).filter(t => t.length > 0);
+                    const matches = store.getAllPapers().filter(p => {
+                        const text = `${p.title} ${p.abstract || ''}`.toLowerCase();
+                        return terms.every(term => text.includes(term));
+                    }).slice(0, config.DEFAULT_SEARCH_LIMIT);
                     return { source: 'local_papers', results: matches };
                 }));
             }
             
-            // 2. RSS Articles (Simple text match)
+            // 2. RSS Articles (Simple keyword match)
             if (useRss) {
                 tasks.push(Promise.resolve().then(() => {
-                    const matches = store.getAllArticles().filter(a => 
-                        a.title.toLowerCase().includes(query) || 
-                        (a.summary && a.summary.toLowerCase().includes(query))
-                    ).slice(0, config.DEFAULT_SEARCH_LIMIT);
+                    const terms = query.split(/\s+/).filter(t => t.length > 0);
+                    const matches = store.getAllArticles().filter(a => {
+                        const text = `${a.title} ${a.summary || ''}`.toLowerCase();
+                        return terms.every(term => text.includes(term));
+                    }).slice(0, config.DEFAULT_SEARCH_LIMIT);
                     return { source: 'rss_articles', results: matches };
                 }));
             }
@@ -268,6 +294,20 @@ export async function handleToolCall(name: string, args: any, requestId: string 
                     response[r.source] = r.results;
                 }
             });
+
+            if (synthesize) {
+                try {
+                    logger.info(`Synthesizing results for query: ${query}`);
+                    const synthesis = await generateCompletion(
+                        "You are a helpful research assistant. Analyze the provided research papers and articles to answer the user's query. Synthesize the information into a coherent summary, citing specific papers or articles where relevant.",
+                        `User Query: ${parsed.query}\n\nSearch Results:\n${JSON.stringify(response, null, 2)}`
+                    );
+                    response['synthesis'] = synthesis;
+                } catch (error) {
+                    logger.warn('Synthesis failed', { error: error instanceof Error ? error.message : String(error) });
+                    response['synthesis_error'] = "Failed to generate synthesis. Check logs for details (OPENAI_API_KEY might be missing).";
+                }
+            }
             
             const result = {
                 content: [{
@@ -277,6 +317,74 @@ export async function handleToolCall(name: string, args: any, requestId: string 
             };
             logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
             return result;
+        }
+
+        if (name === "generate_newsletter") {
+            const parsed = GenerateNewsletterSchema.parse(args);
+            await store.init();
+            const days = parsed.days || 7;
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - days);
+
+            const recentPapers = store.getAllPapers().filter(p => 
+                new Date(p.ingestedAt) >= cutoff
+            );
+
+            const recentArticles = store.getAllArticles().filter(a => {
+                const date = a.publishedAt || a.ingestedAt;
+                return date ? new Date(date) >= cutoff : false;
+            });
+
+            if (recentPapers.length === 0 && recentArticles.length === 0) {
+                 return {
+                    content: [{
+                        type: "text",
+                        text: `No new content found in the last ${days} days.`
+                    }]
+                };
+            }
+
+            const contentSummary = {
+                academic_research: recentPapers.map(p => ({
+                    title: p.title,
+                    authors: p.authors.join(', '),
+                    abstract: p.abstract,
+                    source: p.source
+                })),
+                industry_articles: recentArticles.map(a => ({
+                    title: a.title,
+                    summary: a.summary,
+                    source: a.feedName,
+                    url: a.url
+                }))
+            };
+
+            logger.info(`Generating newsletter with ${recentPapers.length} papers and ${recentArticles.length} articles`);
+
+            try {
+                const newsletter = await generateCompletion(
+                    "You are an expert editor for a tech newsletter focused on code search, AI agents, and developer productivity. Analyze the provided content and create a clean, engaging weekly update. \n\nGuidelines:\n- Separately highlight 'Academic Research' and 'Industry Updates'.\n- STRICTLY PRIORITIZE items related to code search, RAG, embeddings, vector databases, LLM agents for code, and developer tools.\n- Exclude general AI news unless it has direct implications for software engineering.\n- Format each item as follows:\n  ### [Title](URL)\n  **Source:** [Feed Name]\n  [Brief, punchy summary]\n\n- If no items are relevant to the core topics, summarize the most significant general AI engineering updates.\n\nFormat as Markdown.",
+                    `Content for the last ${days} days:\n${JSON.stringify(contentSummary, null, 2)}`
+                );
+
+                const result = {
+                    content: [{
+                        type: "text",
+                        text: newsletter
+                    }]
+                };
+                logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+                return result;
+            } catch (error) {
+                logger.error('Newsletter generation failed', { error: error instanceof Error ? error.message : String(error) });
+                return {
+                    content: [{
+                        type: "text",
+                        text: "Failed to generate newsletter. Please check logs (OPENAI_API_KEY might be missing)."
+                    }],
+                    isError: true
+                };
+            }
         }
     
         if (name === "sg_search") {

@@ -15,6 +15,8 @@ const configSchema = z.object({
   API_RETRY_DELAY: z.coerce.number().default(1000),
   DEFAULT_SEARCH_LIMIT: z.coerce.number().default(10),
   DEFAULT_CONTEXT_LIMIT: z.coerce.number().default(20),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default('gpt-4o'),
 });
 
 export type Config = z.infer<typeof configSchema>;
