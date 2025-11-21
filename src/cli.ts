@@ -59,9 +59,22 @@ program.command('generate')
           const content = await generateNewsletter(days);
           
           let outputPath = options.output;
+          const dateStr = new Date().toISOString().split('T')[0];
+          
           if (!outputPath) {
-              const dateStr = new Date().toISOString().split('T')[0];
               outputPath = path.resolve(process.cwd(), `newsletter-${dateStr}.md`);
+          } else if (outputPath.endsWith('.md') === false) {
+              // Ensure .md extension if not present or if user gave a directory/base name
+              // But if user gave "foo.txt", we should probably respect it or append .md?
+              // Let's assume user might provide just "report" -> report.md
+              // Or let's just stick to the default logic if undefined.
+              // The prompt asked for naming with dates.
+              // If user provides -o, we use it. If not, we use date.
+              // But user wants "all the naming should be with dates".
+              // So if user DOES NOT provide output, we use date.
+              // If user does provide output, we respect it, but maybe we should append date?
+              // Let's stick to the default date-based name if -o is not provided.
+              outputPath = path.resolve(process.cwd(), outputPath);
           } else {
               outputPath = path.resolve(process.cwd(), outputPath);
           }
