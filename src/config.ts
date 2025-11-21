@@ -17,6 +17,7 @@ const configSchema = z.object({
   DEFAULT_CONTEXT_LIMIT: z.coerce.number().default(20),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o'),
+  ADS_TOKEN: z.string().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -31,6 +32,10 @@ const parseConfig = (): Config => {
     // Support SRC_ENDPOINT as alias for SOURCEGRAPH_URL
     if (!env.SOURCEGRAPH_URL && env.SRC_ENDPOINT) {
       env.SOURCEGRAPH_URL = env.SRC_ENDPOINT;
+    }
+    // Support ADS_API_TOKEN as alias for ADS_TOKEN
+    if (!env.ADS_TOKEN && env.ADS_API_TOKEN) {
+      env.ADS_TOKEN = env.ADS_API_TOKEN;
     }
     return configSchema.parse(env);
   } catch (error) {

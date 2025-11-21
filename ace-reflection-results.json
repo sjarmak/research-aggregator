@@ -1,0 +1,17 @@
+{
+  "trace_id": "60534052-0f75-456e-a747-5a872fbfcc16",
+  "analysis_timestamp": "2025-11-21T20:36:31.365Z",
+  "insights": [],
+  "summary": {
+    "total_insights": 0,
+    "high_confidence_insights": 0,
+    "reason": "Trace contains no execution results, no discovered issues, and successful outcome. Insufficient data for extracting meaningful patterns with confidence >= 0.8. This represents a clean execution with no errors or learning opportunities."
+  },
+  "recommendations": [
+    {
+      "type": "process",
+      "message": "Successful traces with no execution data provide limited learning value. Consider capturing execution results even on success (e.g., test pass counts, build time) for baseline metrics.",
+      "confidence": 0.6
+    }
+  ]
+}
