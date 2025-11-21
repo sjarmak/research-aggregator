@@ -3,8 +3,14 @@ import { config } from "../../config.js";
 import { sgClient } from "../sourcegraph/client.js";
 import { store } from "../store/json-store.js";
 import { generateCompletion } from "../llm/client.js";
+import { ingestRecentPapers } from "../ingest/ads-ingest.js";
+import { ingestRssFeeds } from "../ingest/rss-ingest.js";
+import { curateContent } from "../newsletter/curator.js";
+import { generateNewsletter } from "../newsletter/generator.js";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import fs from 'fs/promises';
+import path from 'path';
 
 // Schema definitions for tool arguments
 const GetRecentArticlesSchema = z.object({
@@ -30,6 +36,11 @@ const GenerateNewsletterSchema = z.object({
 const LookupPersonalPapersSchema = z.object({
   libraryId: z.string().optional(),
   limit: z.coerce.number().optional(),
+});
+
+const IngestPapersSchema = z.object({
+  days: z.coerce.number().default(7),
+  query: z.string().optional(),
 });
 
 const SgSearchSchema = z.object({
@@ -131,6 +142,31 @@ export const toolDefinitions = [
     }
   },
   {
+    name: "ingest_rss",
+    description: "Ingest recent articles from RSS feeds.",
+    inputSchema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "ingest_papers",
+    description: "Ingest recent academic papers from ADS/ArXiv based on a query.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "number",
+          description: "Number of days to look back (default: 7)"
+        },
+        query: {
+          type: "string",
+          description: "Optional custom ADS query. Defaults to code/agent papers in cs.AI."
+        }
+      }
+    }
+  },
+  {
     name: "sg_search",
     description: "Search for code, repositories, or files using Sourcegraph. Supports standard Sourcegraph queries (e.g. 'type:symbol', 'type:file', 'repo:').",
     inputSchema: {
@@ -204,6 +240,12 @@ export async function handleToolCall(name: string, args: any, requestId: string 
             const limit = parsed.limit || config.DEFAULT_SEARCH_LIMIT;
             const articles = store.getAllArticles()
                 .sort((a, b) => {
+                    // Primary sort: Score (desc)
+                    // Secondary sort: Date (desc)
+                    const scoreA = a.score || 0;
+                    const scoreB = b.score || 0;
+                    if (scoreA !== scoreB) return scoreB - scoreA;
+
                     const tA = new Date(a.publishedAt || a.ingestedAt || 0).getTime();
                     const tB = new Date(b.publishedAt || b.ingestedAt || 0).getTime();
                     return tB - tA;
@@ -218,6 +260,10 @@ export async function handleToolCall(name: string, args: any, requestId: string 
                         url: a.url,
                         summary: a.summary,
                         feed: a.feedName,
+                        company: a.company,
+                        type: a.contentType,
+                        score: a.score,
+                        tags: a.tags,
                         date: a.publishedAt || a.ingestedAt
                     })), null, 2)
                 }]
@@ -321,56 +367,23 @@ export async function handleToolCall(name: string, args: any, requestId: string 
 
         if (name === "generate_newsletter") {
             const parsed = GenerateNewsletterSchema.parse(args);
-            await store.init();
             const days = parsed.days || 7;
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - days);
-
-            const recentPapers = store.getAllPapers().filter(p => 
-                new Date(p.ingestedAt) >= cutoff
-            );
-
-            const recentArticles = store.getAllArticles().filter(a => {
-                const date = a.publishedAt || a.ingestedAt;
-                return date ? new Date(date) >= cutoff : false;
-            });
-
-            if (recentPapers.length === 0 && recentArticles.length === 0) {
-                 return {
-                    content: [{
-                        type: "text",
-                        text: `No new content found in the last ${days} days.`
-                    }]
-                };
-            }
-
-            const contentSummary = {
-                academic_research: recentPapers.map(p => ({
-                    title: p.title,
-                    authors: p.authors.join(', '),
-                    abstract: p.abstract,
-                    source: p.source
-                })),
-                industry_articles: recentArticles.map(a => ({
-                    title: a.title,
-                    summary: a.summary,
-                    source: a.feedName,
-                    url: a.url
-                }))
-            };
-
-            logger.info(`Generating newsletter with ${recentPapers.length} papers and ${recentArticles.length} articles`);
 
             try {
-                const newsletter = await generateCompletion(
-                    "You are an expert editor for a tech newsletter focused on code search, AI agents, and developer productivity. Analyze the provided content and create a clean, engaging weekly update. \n\nGuidelines:\n- Separately highlight 'Academic Research' and 'Industry Updates'.\n- STRICTLY PRIORITIZE items related to code search, RAG, embeddings, vector databases, LLM agents for code, and developer tools.\n- Exclude general AI news unless it has direct implications for software engineering.\n- Format each item as follows:\n  ### [Title](URL)\n  **Source:** [Feed Name]\n  [Brief, punchy summary]\n\n- If no items are relevant to the core topics, summarize the most significant general AI engineering updates.\n\nFormat as Markdown.",
-                    `Content for the last ${days} days:\n${JSON.stringify(contentSummary, null, 2)}`
-                );
+                // Use shared generator logic
+                const newsletter = await generateNewsletter(days);
+                
+                const dateStr = new Date().toISOString().split('T')[0];
+                const filename = `newsletter-${dateStr}.md`;
+                const filePath = path.resolve(process.cwd(), filename);
+                
+                await fs.writeFile(filePath, newsletter, 'utf-8');
+                logger.info(`Newsletter saved to ${filePath}`);
 
                 const result = {
                     content: [{
                         type: "text",
-                        text: newsletter
+                        text: `Newsletter generated and saved to ${filename}\n\n${newsletter}`
                     }]
                 };
                 logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
@@ -381,6 +394,54 @@ export async function handleToolCall(name: string, args: any, requestId: string 
                     content: [{
                         type: "text",
                         text: "Failed to generate newsletter. Please check logs (OPENAI_API_KEY might be missing)."
+                    }],
+                    isError: true
+                };
+            }
+        }
+
+        if (name === "ingest_rss") {
+            try {
+                await ingestRssFeeds();
+                const result = {
+                    content: [{
+                        type: "text",
+                        text: `Successfully ingested recent RSS articles.`
+                    }]
+                };
+                logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+                return result;
+            } catch (error) {
+                return {
+                    content: [{
+                        type: "text",
+                        text: `Failed to ingest RSS feeds: ${error instanceof Error ? error.message : String(error)}`
+                    }],
+                    isError: true
+                };
+            }
+        }
+
+        if (name === "ingest_papers") {
+            const parsed = IngestPapersSchema.parse(args);
+            const days = parsed.days;
+            const query = parsed.query;
+
+            try {
+                await ingestRecentPapers(days, query);
+                const result = {
+                    content: [{
+                        type: "text",
+                        text: `Successfully ingested recent papers for the last ${days} days.`
+                    }]
+                };
+                logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+                return result;
+            } catch (error) {
+                return {
+                    content: [{
+                        type: "text",
+                        text: `Failed to ingest papers: ${error instanceof Error ? error.message : String(error)}`
                     }],
                     isError: true
                 };
