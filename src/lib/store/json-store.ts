@@ -20,9 +20,18 @@ export class JsonStore {
       if (!parsed.articles) parsed.articles = [];
       this.data = KnowledgeStoreSchema.parse(parsed);
     } catch (error) {
-      // If file doesn't exist or is invalid, start fresh
-      // console.log('Initializing new knowledge store...');
-      await this.save();
+      // If file doesn't exist, start fresh.
+      if ((error as any).code === 'ENOENT') {
+        console.log('Creating new knowledge store at:', this.filePath);
+        await this.save();
+      } else {
+          console.error('Failed to load knowledge store:', error);
+          // We start with empty data in memory but do NOT save it immediately,
+          // so we don't overwrite the corrupt file on disk unless save() is called.
+          // But wait, if we proceed, subsequent addPaper/save calls WILL overwrite it.
+          // For now, let's just log it.
+          throw error; // Fail hard so we don't lose data
+      }
     }
   }
 

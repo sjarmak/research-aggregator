@@ -16,7 +16,8 @@ export async function scrapeTLDR(): Promise<ScrapedArticle[]> {
     try {
         // 1. Get the list of recent issues
         const { data: archiveData } = await axios.get(archiveUrl, {
-            headers: { 'User-Agent': 'ResearchAgent/1.0' }
+            headers: { 'User-Agent': 'ResearchAgent/1.0' },
+            timeout: 5000
         });
         const $archive = cheerio.load(archiveData);
         const issueLinks: string[] = [];
@@ -33,7 +34,8 @@ export async function scrapeTLDR(): Promise<ScrapedArticle[]> {
         for (const link of issueLinks) {
             try {
                 const { data: issueData } = await axios.get(link, {
-                    headers: { 'User-Agent': 'ResearchAgent/1.0' }
+                    headers: { 'User-Agent': 'ResearchAgent/1.0' },
+                    timeout: 5000
                 });
                 const $ = cheerio.load(issueData);
                 
@@ -115,7 +117,8 @@ export async function scrapeProgrammingDigest(): Promise<ScrapedArticle[]> {
     const archiveUrl = 'https://programmingdigest.net/newsletters';
     try {
         const { data: archiveData } = await axios.get(archiveUrl, {
-            headers: { 'User-Agent': 'ResearchAgent/1.0' }
+            headers: { 'User-Agent': 'ResearchAgent/1.0' },
+            timeout: 5000
         });
         const $archive = cheerio.load(archiveData);
         const issueLinks: string[] = [];
@@ -132,7 +135,8 @@ export async function scrapeProgrammingDigest(): Promise<ScrapedArticle[]> {
         for (const link of issueLinks) {
             try {
                 const { data: issueData } = await axios.get(link, {
-                    headers: { 'User-Agent': 'ResearchAgent/1.0' }
+                    headers: { 'User-Agent': 'ResearchAgent/1.0' },
+                    timeout: 5000
                 });
                 const $ = cheerio.load(issueData);
                 
@@ -193,7 +197,8 @@ export async function scrapeAugmentCode(): Promise<ScrapedArticle[]> {
     const url = 'https://www.augmentcode.com/blog';
     try {
         const { data } = await axios.get(url, {
-            headers: { 'User-Agent': 'ResearchAgent/1.0' }
+            headers: { 'User-Agent': 'ResearchAgent/1.0' },
+            timeout: 5000
         });
         const $ = cheerio.load(data);
         const articles: ScrapedArticle[] = [];
@@ -233,7 +238,8 @@ export async function scrapeGreptile(): Promise<ScrapedArticle[]> {
     const url = 'https://www.greptile.com/blog';
     try {
         const { data } = await axios.get(url, {
-            headers: { 'User-Agent': 'ResearchAgent/1.0' }
+            headers: { 'User-Agent': 'ResearchAgent/1.0' },
+            timeout: 5000
         });
         const $ = cheerio.load(data);
         const articles: ScrapedArticle[] = [];
@@ -273,7 +279,8 @@ export async function scrapeQodo(): Promise<ScrapedArticle[]> {
     const url = 'https://www.qodo.ai/blog/';
     try {
         const { data } = await axios.get(url, {
-            headers: { 'User-Agent': 'ResearchAgent/1.0' }
+            headers: { 'User-Agent': 'ResearchAgent/1.0' },
+            timeout: 5000
         });
         const $ = cheerio.load(data);
         const articles: ScrapedArticle[] = [];

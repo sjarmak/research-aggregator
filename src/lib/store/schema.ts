@@ -41,7 +41,7 @@ export const ExternalArticleSchema = z.object({
   feedName: z.string(), // e.g., "Hacker News", "ArXiv: Astro-ph"
   
   // Enhanced classification fields
-  sourceType: z.enum(['competitor_blog', 'platform_blog', 'infra_blog', 'curated_ai', 'general']).optional(),
+  sourceType: z.enum(['competitor_blog', 'platform_blog', 'infra_blog', 'curated_ai', 'engineering_blog', 'general']).optional(),
   company: z.string().optional(),
   contentType: z.enum(['product_launch', 'feature_update', 'pricing_business', 'security_incident', 'funding_mna', 'benchmark_eval', 'thought_leadership', 'general']).optional(),
   score: z.number().optional(),

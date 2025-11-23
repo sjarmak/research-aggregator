@@ -26,54 +26,110 @@ export async function generateNewsletter(days: number = 7): Promise<string> {
     const candidates = [...recentPapers, ...recentArticles];
     const curatedItems = await curateContent(candidates);
 
-    // 3. Filter High-Scoring Items (Score >= 6)
-    const RELEVANCE_THRESHOLD = 6;
-    const highValueItems = curatedItems.filter(i => i.score >= RELEVANCE_THRESHOLD);
+    // 3. Filter & Sort
+    // Papers tend to score higher (10-17), while industry blogs score lower (4-10).
+    // We use different thresholds to ensure we don't filter out good industry content.
+    const PAPER_THRESHOLD = 6;
+    const ARTICLE_THRESHOLD = 3.5;
 
-    // 4. Categorize for Final Newsletter
-    const curatedPapers = highValueItems
-        .filter(i => i.item.source === 'ads')
-        .map(i => ({
-            title: i.item.title,
-            authors: (i.item as any).authors.join(', '),
-            abstract: (i.item as any).abstract,
-            reasoning: i.reasoning,
-            score: i.score,
-            url: i.item.url
-        }));
+    const sortedItems = curatedItems
+        .filter(i => {
+            const isPaper = i.item.source === 'ads';
+            return i.score >= (isPaper ? PAPER_THRESHOLD : ARTICLE_THRESHOLD);
+        })
+        .sort((a, b) => b.score - a.score);
 
-    const curatedArticles = highValueItems
-        .filter(i => i.item.source === 'rss')
-        .map(i => ({
-            title: i.item.title,
-            summary: (i.item as any).summary,
-            reasoning: i.reasoning,
-            source: (i.item as any).feedName,
-            company: (i.item as any).company,
-            type: (i.item as any).contentType,
-            tags: (i.item as any).tags,
-            score: i.score,
-            url: i.item.url
-        }));
-
-    if (curatedPapers.length === 0 && curatedArticles.length === 0) {
-         return `No high-relevance content found in the last ${days} days (Threshold: ${RELEVANCE_THRESHOLD}).`;
+    if (sortedItems.length === 0) {
+         return `No high-relevance content found in the last ${days} days.`;
     }
 
-    const contentSummary = {
-        academic_research: curatedPapers,
-        industry_articles: curatedArticles
+    // 4. Split into Top 5 (Mixed Selection)
+    const papers = sortedItems.filter(i => i.item.source === 'ads');
+    const articles = sortedItems.filter(i => i.item.source !== 'ads');
+
+    // Target: 3 Papers, 2 Articles (flexible)
+    const targetPapers = 3;
+    const targetArticles = 2;
+
+    const selectedPapers = papers.slice(0, targetPapers);
+    const remainingPapers = papers.slice(targetPapers);
+
+    const selectedArticles = articles.slice(0, targetArticles);
+    const remainingArticles = articles.slice(targetArticles);
+
+    // Fill gaps if one category is short
+    let featuredItems = [...selectedPapers, ...selectedArticles];
+    
+    if (selectedPapers.length < targetPapers) {
+        // Fill with more articles
+        const needed = targetPapers - selectedPapers.length;
+        featuredItems.push(...remainingArticles.slice(0, needed));
+        remainingArticles.splice(0, needed); // Remove taken items
+    } else if (selectedArticles.length < targetArticles) {
+        // Fill with more papers
+        const needed = targetArticles - selectedArticles.length;
+        featuredItems.push(...remainingPapers.slice(0, needed));
+        remainingPapers.splice(0, needed);
+    }
+
+    // Re-sort featured items by score for display
+    featuredItems.sort((a, b) => b.score - a.score);
+    
+    // The rest go to "Other Items"
+    // We need to reconstruct the pool of unselected items
+    const usedIds = new Set(featuredItems.map(i => i.item.id));
+    const otherItems = sortedItems.filter(i => !usedIds.has(i.item.id));
+
+    // Helper to map items for LLM
+    const mapItem = (i: any, includeContext: boolean = true) => {
+        const item = i.item;
+        return {
+            title: item.title,
+            url: item.url,
+            score: i.score,
+            reasoning: i.reasoning,
+            source: item.source === 'ads' ? 'Academic Paper' : (item.feedName || 'RSS'),
+            // Only include full abstract for featured items
+            context: includeContext ? (item.source === 'ads' ? item.abstract : (item.summary || item.contentSnippet)) : undefined,
+            authors: item.authors ? item.authors.join(', ') : item.author,
+            tags: item.tags
+        };
     };
 
-    logger.info(`Generating newsletter with ${curatedPapers.length} papers and ${curatedArticles.length} articles after curation.`);
+    const contentContext = {
+        featured: featuredItems.map(i => mapItem(i, true)),
+        additional_reads: otherItems.map(i => mapItem(i, false)) // No context for these
+    };
+
+    logger.info(`Generating newsletter with ${featuredItems.length} featured and ${otherItems.length} additional items.`);
 
     const fromDate = cutoff.toISOString().split('T')[0];
     const toDate = new Date().toISOString().split('T')[0];
 
-    const newsletter = await generateCompletion(
-        "You are an expert editor for a tech newsletter focused on code search, AI agents, and developer productivity. Analyze the provided *curated* content and create a comprehensive weekly update. \n\nGuidelines:\n- Start with a Top-Level Header: '# Research & Engineering Update (" + fromDate + " to " + toDate + ")'\n- Start with a '## TL;DR Highlights' section containing 3-5 bullet points of the most impactful items. Each bullet MUST include a markdown link to the source (e.g., 'Researchers at MIT introduced [MethodName](url)...').\n- **PRIORITIZE** items related to **Context Engineering**, **Information Retrieval**, and **Semantic Search** for codebases in the highlights (e.g. Greptile, RAG, Vector DBs).\n- After the highlights, include **ALL** provided items in the detailed sections.\n- Separately highlight 'Academic Research' and 'Industry Updates'.\n- Do NOT display the numerical relevance score.\n- Format each item as follows:\n  ### [Title](URL)\n  **Source:** [Feed Name / Company]\n  **Why it matters:** [Use the reasoning provided to explain the impact]\n  **Key Takeaways:**\n  - [Bulleted list of 2-3 specific technical details or insights from the abstract/summary]\n  [Brief summary paragraph]\n\nFormat as Markdown.",
-        `Curated Content for the last ${days} days:\n${JSON.stringify(contentSummary, null, 2)}`
-    );
+    // 1. Generate Highlights & Deep Dives
+    const featuredPrompt = 
+        `You are an expert tech editor. Create the main section of a newsletter based on these 5 featured items.\n\n` +
+        `Content:\n${JSON.stringify(featuredItems.map(i => mapItem(i, true)), null, 2)}\n\n` +
+        `Format:\n` +
+        `# Research and Industry Updates (${fromDate} to ${toDate})\n\n` +
+        `## TL;DR Highlights\n` +
+        `- [3-5 bullet points with links]\n\n` +
+        `## Deep Dives\n` +
+        `(Detailed section for each item: Title, Source, Why it matters, Key Takeaways, Summary)`;
 
-    return newsletter;
+    const featuredPart = await generateCompletion(featuredPrompt, "Generate markdown.");
+
+    // 2. Generate Additional Reads (Programmatically)
+    let additionalPart = "";
+    if (otherItems.length > 0) {
+        additionalPart = "## Additional Reads\n\n";
+        additionalPart += otherItems.map(i => {
+            const item = i.item;
+            // Clean up reasoning (remove "Score X/10" if present)
+            const comment = i.reasoning.replace(/^Score \d+(\/\d+)?:?\s*/i, '');
+            return `- **[${item.title}](${item.url})**: ${comment}`;
+        }).join('\n');
+    }
+
+    return `${featuredPart}\n\n${additionalPart}`;
 }

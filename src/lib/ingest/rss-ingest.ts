@@ -8,7 +8,7 @@ import { scrapeAugmentCode, scrapeGreptile, scrapeQodo, scrapeTLDR, scrapeProgra
 import { classifyContent, calculateScore, FeedCategory } from './classifier.js';
 
 const parser = new Parser({
-  timeout: 10000,
+  timeout: 5000,
   headers: {
     'User-Agent': 'ResearchAgent/1.0'
   }
@@ -24,8 +24,8 @@ interface FeedConfig {
 }
 
 const RSS_FEEDS: FeedConfig[] = [
-// ... (Feed list is long, I should keep it but remove the constants after it)
     // A. Direct Competitors (AI Coding Agents)
+    /*
     { 
         name: 'Augment Code', 
         url: 'https://www.augmentcode.com/blog', 
@@ -59,11 +59,15 @@ const RSS_FEEDS: FeedConfig[] = [
     { name: 'Hornet', url: 'https://blog.hornet.dev/rss.xml', category: 'competitor_blog', company: 'Hornet' },
     { name: 'Sourcegraph', url: 'https://sourcegraph.com/blog/rss.xml', category: 'competitor_blog', company: 'Sourcegraph' },
     { name: 'JetBrains AI', url: 'https://blog.jetbrains.com/ai/feed/', category: 'competitor_blog', company: 'JetBrains' },
+    */
     
     // B. Platform + Ecosystem DevTools
     { name: 'GitHub Blog', url: 'http://github.com/blog.atom', category: 'platform_blog', company: 'GitHub' },
+    /*
     { name: 'GitLab Blog', url: 'https://about.gitlab.com/atom.xml', category: 'platform_blog', company: 'GitLab' },
+    */
     { name: 'OpenAI News', url: 'https://openai.com/news/rss.xml', category: 'platform_blog', company: 'OpenAI' },
+    /*
     { name: 'LangChain Blog', url: 'https://blog.langchain.dev/rss/', category: 'platform_blog', company: 'LangChain' },
     { name: 'LlamaIndex Blog', url: 'https://www.llamaindex.ai/blog/rss.xml', category: 'platform_blog', company: 'LlamaIndex' },
     { name: 'Pinecone Blog', url: 'https://www.pinecone.io/feed.xml', category: 'platform_blog', company: 'Pinecone' },
@@ -71,28 +75,38 @@ const RSS_FEEDS: FeedConfig[] = [
     { name: 'Google DeepMind', url: 'https://deepmind.google/discover/blog/rss.xml', category: 'platform_blog', company: 'Google' },
     { name: 'AWS Machine Learning', url: 'https://aws.amazon.com/blogs/machine-learning/feed/', category: 'platform_blog', company: 'AWS' },
     { name: 'Microsoft Research', url: 'https://www.microsoft.com/en-us/research/feed/', category: 'platform_blog', company: 'Microsoft' },
+    */
 
     // C. Retrieval / RAG Infra / Tooling
+    /*
     { name: 'Weaviate Blog', url: 'https://weaviate.io/blog/rss.xml', category: 'infra_blog', company: 'Weaviate' },
     { name: 'Qdrant Blog', url: 'https://qdrant.tech/blog/rss.xml', category: 'infra_blog', company: 'Qdrant' }, 
     { name: 'Elasticsearch Blog', url: 'https://www.elastic.co/blog/feed', category: 'infra_blog', company: 'Elastic' }, // Main blog
     { name: 'Elastic Search Labs', url: 'https://www.elastic.co/search-labs/rss/feed', category: 'infra_blog', company: 'Elastic' }, // Technical/RAG specific
     { name: 'Supabase Blog', url: 'https://supabase.com/blog/rss.xml', category: 'infra_blog', company: 'Supabase' },
     { name: 'Vespa Blog', url: 'https://blog.vespa.ai/feed.xml', category: 'infra_blog', company: 'Vespa' },
+    */
 
     // D. AI Engineering & Thought Leadership (High Signal)
     { name: 'Latent Space', url: 'https://latent.space/feed', category: 'engineering_blog' },
     { name: 'Eugene Yan', url: 'https://eugeneyan.com/rss/', category: 'engineering_blog', company: 'Eugene Yan' },
+    /*
     { name: 'Chip Huyen', url: 'https://huyenchip.com/feed.xml', category: 'engineering_blog', company: 'Chip Huyen' },
     // { name: 'Towards AI', url: 'https://pub.towardsai.net/feed', category: 'engineering_blog' }, // Cloudflare blocked
     { name: 'DataScienceDojo', url: 'https://datasciencedojo.com/blog/feed/', category: 'engineering_blog' },
+    */
 
     // E. Curated AI/ML + DevTools RSS Bundles
+    /*
     { name: 'Hacker News', url: 'https://news.ycombinator.com/rss', category: 'curated_ai' },
+    */
+    /*
     { name: 'Lobste.rs', url: 'https://lobste.rs/rss', category: 'curated_ai' },
+    */
     
     // F. Newsletters
     { name: 'Pragmatic Engineer', url: 'https://newsletter.pragmaticengineer.com/feed', category: 'curated_ai', company: 'Pragmatic Engineer' },
+    /*
     { 
         name: 'TLDR Tech', 
         url: 'https://tldr.tech/tech/archives', 
@@ -100,6 +114,8 @@ const RSS_FEEDS: FeedConfig[] = [
         type: 'scraper',
         scraperFn: scrapeTLDR 
     },
+    */
+    /*
     {
         name: 'Programming Digest',
         url: 'https://programmingdigest.net/newsletters',
@@ -107,6 +123,7 @@ const RSS_FEEDS: FeedConfig[] = [
         type: 'scraper',
         scraperFn: scrapeProgrammingDigest
     }
+    */
 ];
 
 // 3. Classification Configuration
@@ -175,8 +192,8 @@ function isTransientError(error: unknown): boolean {
 }
 
 async function fetchFeedWithRetry(url: string, feedName: string, retryCount = 0): Promise<any> {
-    const MAX_RETRIES = config.API_MAX_RETRIES || 3;
-    const INITIAL_DELAY_MS = config.API_RETRY_DELAY || 1000;
+    const MAX_RETRIES = 1;
+    const INITIAL_DELAY_MS = 1000;
 
     try {
         return await parser.parseURL(url);
@@ -225,7 +242,10 @@ export async function ingestRssFeeds() {
         return Promise.all(results);
     };
 
-    await runWithLimit(RSS_FEEDS, CONCURRENCY_LIMIT, async (feed) => {
+    // Use a smaller concurrency limit to avoid timeouts
+    const RSS_CONCURRENCY_LIMIT = 3;
+
+    await runWithLimit(RSS_FEEDS, RSS_CONCURRENCY_LIMIT, async (feed) => {
         try {
             logger.info(`Fetching feed: ${feed.name}`);
             let items: any[] = [];
