@@ -15,7 +15,13 @@ export const PaperSchema = z.object({
   // Metadata for our system
   source: z.literal('ads'),
   ingestedAt: z.string(), // ISO date
+  publishedAt: z.string().optional(), // ISO date from ADS pubdate
   libraryId: z.string().optional(), // Which ADS library this came from
+  
+  // Enhanced classification fields (same as ExternalArticle)
+  contentType: z.enum(['product_launch', 'feature_update', 'pricing_business', 'security_incident', 'funding_mna', 'benchmark_eval', 'thought_leadership', 'general']).optional(),
+  tags: z.array(z.string()).optional(),
+  score: z.number().optional(),
 });
 
 export type Paper = z.infer<typeof PaperSchema>;

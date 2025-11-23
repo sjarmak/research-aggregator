@@ -2,7 +2,7 @@ import { WebClient } from '@slack/web-api';
 import { config } from '../../config.js';
 import { logger } from '../logger.js';
 
-function convertToSlackMrkdwn(text: string): string {
+export function convertToSlackMrkdwn(text: string): string {
     let slackText = text;
     
     // Convert links: [text](url) -> <url|text>

@@ -10,6 +10,7 @@ export interface AdsPaper {
   year: string;
   pub: string;
   pubdate: string;
+  keyword?: string[];
   id: string;
 }
 
@@ -45,7 +46,7 @@ export class AdsClient {
       const response = await this.client.get<AdsResponse>('/search/query', {
         params: {
           q: query,
-          fl: 'id,bibcode,title,author,abstract,year,pub,pubdate',
+          fl: 'id,bibcode,title,author,abstract,year,pub,pubdate,keyword',
           rows: rows,
           sort: sort,
         },

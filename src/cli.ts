@@ -5,6 +5,7 @@ import { ingestRecentPapers } from './lib/ingest/ads-ingest.js';
 import { generateNewsletter } from './lib/newsletter/generator.js';
 import { shareOnSlack, convertToSlackMrkdwn } from './lib/newsletter/slack.js';
 import { logger } from './lib/logger.js';
+import { pdfStyles } from './lib/newsletter/pdf-styles.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { mdToPdf } from 'md-to-pdf';
@@ -18,20 +19,23 @@ program
 
 program.command('ingest')
   .description('Ingest content from configured sources')
-  .option('-r, --rss', 'Ingest RSS feeds', true)
-  .option('-p, --papers', 'Ingest academic papers from ADS', false)
+  .option('-r, --rss', 'Ingest RSS feeds')
+  .option('-p, --papers', 'Ingest academic papers from ADS')
   .option('-d, --days <number>', 'Days to look back for papers', '7')
   .action(async (options) => {
     try {
         const tasks: Promise<void>[] = [];
         
-        if (options.rss) {
+        // If no source flags provided, run all
+        const runAll = !options.rss && !options.papers;
+        
+        if (runAll || options.rss) {
             tasks.push(Promise.resolve().then(async () => {
                 logger.info('Starting RSS ingestion...');
                 await ingestRssFeeds();
             }));
         }
-        if (options.papers) {
+        if (runAll || options.papers) {
             tasks.push(Promise.resolve().then(async () => {
                 logger.info('Starting Paper ingestion...');
                 await ingestRecentPapers(parseInt(options.days));
@@ -86,7 +90,23 @@ program.command('generate')
           if (options.pdf) {
               const pdfPath = outputPath.replace(/\.md$/, '.pdf');
               logger.info(`Generating PDF: ${pdfPath}`);
-              await mdToPdf({ content }, { dest: pdfPath });
+              await mdToPdf(
+                  { content },
+                  {
+                      dest: pdfPath,
+                      css: pdfStyles,
+                      pdf_options: {
+                          format: 'A4',
+                          margin: {
+                              top: '20mm',
+                              right: '20mm',
+                              bottom: '20mm',
+                              left: '20mm',
+                          },
+                          printBackground: true,
+                      },
+                  }
+              );
               console.log(`\n✅ PDF export: ${pdfPath}`);
           }
 

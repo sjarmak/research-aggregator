@@ -2,6 +2,7 @@ import { adsClient, AdsPaper } from '../ads/client.js';
 import { store } from '../store/json-store.js';
 import { Paper } from '../store/schema.js';
 import { logger } from '../logger.js';
+import { classifyContent, calculateScore } from './classifier.js';
 
 const DEFAULT_QUERY = 'abs:"search" AND (abs:"code" OR abs:"coding" OR abs:"agent") OR abs:"information retrieval" bibstem:arxiv year:2025-2026 arxiv_class:"cs.AI"';
 
@@ -21,16 +22,9 @@ export async function ingestRecentPapers(days: number = 7, query: string = DEFAU
 
         for (const p of rawPapers) {
             // Parse pubdate (YYYY-MM-DD)
-            // If pubdate is missing, we might skip or assume it's recent if sorted by date.
-            // ADS usually provides pubdate.
             let pubDate = new Date(p.pubdate);
             if (isNaN(pubDate.getTime())) {
-                // Fallback: if we can't parse date, we skip filtering strict date 
-                // but since we sorted by date desc, top results are likely recent.
-                // For safety, let's default to now if missing, or maybe skip.
-                // Let's assume 'year' is accurate.
-                pubDate = new Date(); // Assume recent if missing? No, dangerous.
-                // Let's rely on the fact we asked for recent papers.
+                pubDate = new Date(); // Fallback logic could be improved
             }
 
             // Check if paper is within the last 'days'
@@ -38,6 +32,11 @@ export async function ingestRecentPapers(days: number = 7, query: string = DEFAU
                 skippedCount++;
                 continue; 
             }
+
+            const { contentType, tags } = classifyContent(
+                p.title ? p.title[0] : '', 
+                p.abstract || ''
+            );
 
             const paper: Paper = {
                 id: p.id,
@@ -50,8 +49,14 @@ export async function ingestRecentPapers(days: number = 7, query: string = DEFAU
                 source: 'ads',
                 url: `https://ui.adsabs.harvard.edu/abs/${p.bibcode}/abstract`,
                 ingestedAt: new Date().toISOString(),
-                libraryId: 'ads-ingest' 
+                publishedAt: pubDate.toISOString(),
+                libraryId: 'ads-ingest',
+                keywords: p.keyword || [],
+                contentType,
+                tags,
             };
+
+            paper.score = calculateScore(paper, 'paper', contentType, tags);
 
             newPapers.push(paper);
         }
