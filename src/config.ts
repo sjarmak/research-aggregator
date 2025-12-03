@@ -17,8 +17,12 @@ const configSchema = z.object({
   DEFAULT_CONTEXT_LIMIT: z.coerce.number().default(20),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o'),
+  OPENAI_MODEL_SYNTHESIS: z.string().default('gpt-4o'), // Used for high-quality newsletter synthesis
   ADS_TOKEN: z.string().optional(),
   SLACK_TOKEN: z.string().optional(),
+  INOREADER_CLIENT_ID: z.string().optional(),
+  INOREADER_CLIENT_SECRET: z.string().optional(),
+  INOREADER_REFRESH_TOKEN: z.string().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;

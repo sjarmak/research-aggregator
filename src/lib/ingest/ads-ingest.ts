@@ -54,6 +54,7 @@ export async function ingestRecentPapers(days: number = 7, query: string = DEFAU
                 keywords: p.keyword || [],
                 contentType,
                 tags,
+                content: p.body
             };
 
             paper.score = calculateScore(paper, 'paper', contentType, tags);

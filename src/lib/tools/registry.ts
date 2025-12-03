@@ -5,8 +5,10 @@ import { store } from "../store/json-store.js";
 import { generateCompletion } from "../llm/client.js";
 import { ingestRecentPapers } from "../ingest/ads-ingest.js";
 import { ingestRssFeeds } from "../ingest/rss-ingest.js";
+import { InoreaderIngester } from "../ingest/inoreader-ingest.js";
 import { curateContent } from "../newsletter/curator.js";
 import { generateNewsletter } from "../newsletter/generator.js";
+import { convertMarkdownToHtml } from "../utils/html-converter.js";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import fs from 'fs/promises';
@@ -147,6 +149,19 @@ export const toolDefinitions = [
     inputSchema: {
       type: "object",
       properties: {}
+    }
+  },
+  {
+    name: "ingest_inoreader",
+    description: "Ingest recent articles from Inoreader account (default reading list).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+            type: "number",
+            description: "Number of items to fetch (default: 50)"
+        }
+      }
     }
   },
   {
@@ -380,10 +395,13 @@ export async function handleToolCall(name: string, args: any, requestId: string 
                 await fs.writeFile(filePath, newsletter, 'utf-8');
                 logger.info(`Newsletter saved to ${filePath}`);
 
+                // Convert to HTML
+                const htmlPath = await convertMarkdownToHtml(filePath);
+
                 const result = {
                     content: [{
                         type: "text",
-                        text: `Newsletter generated and saved to ${filename}\n\n${newsletter}`
+                        text: `Newsletter generated and saved to:\n- Markdown: ${filename}\n- HTML: ${path.basename(htmlPath)}\n\n${newsletter}`
                     }]
                 };
                 logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
@@ -416,6 +434,30 @@ export async function handleToolCall(name: string, args: any, requestId: string 
                     content: [{
                         type: "text",
                         text: `Failed to ingest RSS feeds: ${error instanceof Error ? error.message : String(error)}`
+                    }],
+                    isError: true
+                };
+            }
+        }
+
+        if (name === "ingest_inoreader") {
+            const limit = args?.limit || 50;
+            try {
+                const ingester = new InoreaderIngester();
+                const count = await ingester.sync('user/-/state/com.google/reading-list', limit);
+                const result = {
+                    content: [{
+                        type: "text",
+                        text: `Successfully ingested ${count} articles from Inoreader.`
+                    }]
+                };
+                logger.debug(`[${requestId}] Tool execution completed`, { tool: name });
+                return result;
+            } catch (error) {
+                return {
+                    content: [{
+                        type: "text",
+                        text: `Failed to ingest Inoreader: ${error instanceof Error ? error.message : String(error)}`
                     }],
                     isError: true
                 };

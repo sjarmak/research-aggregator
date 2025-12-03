@@ -106,7 +106,6 @@ const RSS_FEEDS: FeedConfig[] = [
     
     // F. Newsletters
     { name: 'Pragmatic Engineer', url: 'https://newsletter.pragmaticengineer.com/feed', category: 'curated_ai', company: 'Pragmatic Engineer' },
-    /*
     { 
         name: 'TLDR Tech', 
         url: 'https://tldr.tech/tech/archives', 
@@ -114,7 +113,7 @@ const RSS_FEEDS: FeedConfig[] = [
         type: 'scraper',
         scraperFn: scrapeTLDR 
     },
-    */
+    /*
     /*
     {
         name: 'Programming Digest',

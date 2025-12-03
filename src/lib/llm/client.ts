@@ -4,18 +4,21 @@ import { logger } from '../logger.js';
 
 export async function generateCompletion(
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  options?: { highQuality?: boolean }
 ): Promise<string> {
   if (!config.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not configured. Cannot perform synthesis.');
   }
 
+  const model = options?.highQuality ? config.OPENAI_MODEL_SYNTHESIS : config.OPENAI_MODEL;
+
   try {
-    logger.info('Generating LLM completion...');
+    logger.info(`Generating LLM completion with model: ${model}...`);
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: config.OPENAI_MODEL,
+        model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },

@@ -1,0 +1,102 @@
+*Research & Engineering Update (2025-11-14 to 2025-11-21)*
+
+*TL;DR Highlights*
+• Researchers introduced <https://ui.adsabs.harvard.edu/abs/2025arXiv251105385Z/abstract|TeaRAG>, a token-efficient framework for Retrieval-Augmented Generation (RAG), optimizing retrieval and reasoning processes to enhance context management and retrieval efficiency.
+• <https://ui.adsabs.harvard.edu/abs/2025arXiv251106179W/abstract|MemoriesDB> presents a novel data architecture for long-term memory in AI systems, integrating time, semantic, and relational data for efficient retrieval and context management.
+• <https://www.greptile.com/blog/semantic-codebase-search|Greptile> highlighted the unique challenges of semantic codebase search, emphasizing the importance of advanced retrieval techniques in software development.
+• The <https://blog.langchain.com/how-agents-can-use-filesystems-for-context-engineering/|LangChain Blog> discussed how agents can utilize filesystems for context engineering, enhancing context management capabilities in AI systems.
+• <https://weaviate.io/blog/dify-and-weaviate|Weaviate> explored building RAG applications through integration with Dify, focusing on retrieval and context optimization.
+
+*Academic Research*
+
+*<https://ui.adsabs.harvard.edu/abs/2025arXiv251105385Z/abstract|TeaRAG: A Token-Efficient Agentic Retrieval-Augmented Generation Framework>*
+*Source:* Zhang et al.
+*Why it matters:* TeaRAG optimizes retrieval and reasoning processes in RAG, directly addressing context management and retrieval efficiency.
+*Key Takeaways:*
+• Utilizes chunk-based semantic retrieval with graph retrieval using concise triplets.
+• Implements Iterative Process-aware Direct Preference Optimization (IP-DPO) to reduce reasoning steps.
+• Achieves significant token reduction while improving Exact Match scores on multiple datasets.
+
+TeaRAG introduces a framework that compresses retrieval content and reasoning steps, enhancing the efficiency of RAG systems by reducing token overhead and improving accuracy.
+
+*<https://ui.adsabs.harvard.edu/abs/2025arXiv251106179W/abstract|MemoriesDB: A Temporal-Semantic-Relational Database for Long-Term Agent Memory>*
+*Source:* Ward, Joel
+*Why it matters:* MemoriesDB discusses a database architecture for long-term memory and retrieval, crucial for agent memory systems.
+*Key Takeaways:*
+• Combines time-series, vector database, and graph system properties.
+• Supports efficient time-bounded retrieval and hybrid semantic search.
+• Demonstrates scalable recall and contextual reinforcement using standard relational infrastructure.
+
+MemoriesDB offers a unified architecture to maintain coherence across time, meaning, and relation, enhancing long-term memory capabilities in AI systems.
+
+*<https://ui.adsabs.harvard.edu/abs/2025arXiv251101643C/abstract|A Graph-based RAG for Energy Efficiency Question Answering>*
+*Source:* Campi et al.
+*Why it matters:* This study explores a graph-based RAG for question answering, directly related to retrieval and context management.
+*Key Takeaways:*
+• Automatically extracts a Knowledge Graph from energy field documents.
+• Provides accurate multilingual answers with a 75.2% accuracy rate.
+• Demonstrates promising multilingual abilities with minimal accuracy loss due to translation.
+
+This work highlights the potential of graph-based RAG architectures in providing accurate and multilingual question answering in the energy sector.
+
+*<https://ui.adsabs.harvard.edu/abs/2025arXiv251101268K/abstract|Rescuing the Unpoisoned: Efficient Defense against Knowledge Corruption Attacks on RAG Systems>*
+*Source:* Kim et al.
+*Why it matters:* Directly addresses RAG and defense mechanisms, relevant to context and retrieval optimization.
+*Key Takeaways:*
+• Introduces RAGDefender, a resource-efficient defense mechanism against data poisoning attacks.
+• Operates during the post-retrieval phase to filter out adversarial content.
+• Outperforms existing defenses, significantly reducing attack success rates.
+
+RAGDefender offers a lightweight solution to protect RAG systems from knowledge corruption, enhancing the robustness of retrieval processes.
+
+*<https://ui.adsabs.harvard.edu/abs/2025arXiv251104720K/abstract|Learning to reason about rare diseases through retrieval-augmented agents>*
+*Source:* Kim et al.
+*Why it matters:* Focuses on retrieval-augmented diagnostic reasoning, relevant to context and retrieval in AI systems.
+*Key Takeaways:*
+• Uses AI agents to retrieve clinically relevant evidence for rare disease detection.
+• Integrates with diverse LLMs to improve pathology recognition and interpretability.
+• Achieves up to a 10.2% performance gain on rare disease datasets.
+
+RADAR demonstrates the power of retrieval-augmented reasoning in improving diagnostic accuracy for rare diseases in medical imaging.
+
+*Industry Updates*
+
+*<https://weaviate.io/blog/dify-and-weaviate|Bringing RAG to Life with Dify and Weaviate>*
+*Source:* Weaviate Blog
+*Why it matters:* The post discusses building RAG applications, which is directly relevant to retrieval and context.
+*Key Takeaways:*
+• Explores integration of Dify with Weaviate for RAG applications.
+• Focuses on enhancing retrieval and context management capabilities.
+• Provides insights into practical applications of RAG systems.
+
+This article highlights the integration of Dify and Weaviate, showcasing the potential of RAG applications in improving retrieval processes.
+
+*<https://www.greptile.com/blog/semantic-codebase-search|Codebases are uniquely hard to search semantically>*
+*Source:* Greptile
+*Why it matters:* Directly addresses the challenges of semantic codebase search, a core interest.
+*Key Takeaways:*
+• Discusses the complexity of semantic search in codebases.
+• Emphasizes the need for advanced retrieval techniques.
+• Highlights the importance of context management in software development.
+
+Greptile's insights into semantic codebase search underline the challenges and opportunities in enhancing retrieval techniques for software development.
+
+*<https://blog.langchain.com/how-agents-can-use-filesystems-for-context-engineering/|How agents can use filesystems for context engineering>*
+*Source:* LangChain Blog
+*Why it matters:* The article discusses how agents can use filesystems for context engineering, which is relevant to context management for LLMs.
+*Key Takeaways:*
+• Highlights the role of filesystems in enhancing context management.
+• Discusses the integration of filesystem tools with AI agents.
+• Provides practical examples of context engineering in AI systems.
+
+LangChain's exploration of filesystem tools for context engineering offers valuable insights into improving context management in AI systems.
+
+*<https://about.gitlab.com/blog/gitlab-18-6-from-configuration-to-control/|GitLab 18.6: From configuration to control>*
+*Source:* GitLab Blog
+*Why it matters:* GitLab's update includes agentic coding enhancements with context awareness, which is relevant to our interest in context management.
+*Key Takeaways:*
+• Introduces new AI enhancements for software development workflows.
+• Offers greater flexibility and control over AI model selection.
+• Improves platform security and context management capabilities.
+
+GitLab 18.6's enhancements demonstrate the integration of AI into software development, emphasizing context awareness and management.

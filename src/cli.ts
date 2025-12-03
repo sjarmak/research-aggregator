@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { ingestRssFeeds } from './lib/ingest/rss-ingest.js';
 import { ingestRecentPapers } from './lib/ingest/ads-ingest.js';
+import { ingestPapersFromScix } from './lib/ingest/scix-ingest.js';
 import { generateNewsletter } from './lib/newsletter/generator.js';
 import { shareOnSlack, convertToSlackMrkdwn } from './lib/newsletter/slack.js';
 import { logger } from './lib/logger.js';
@@ -20,14 +21,17 @@ program
 program.command('ingest')
   .description('Ingest content from configured sources')
   .option('-r, --rss', 'Ingest RSS feeds')
-  .option('-p, --papers', 'Ingest academic papers from ADS')
+  .option('-p, --papers', 'Ingest academic papers from ADS (Legacy)')
+  .option('--scix', 'Ingest academic papers using SciX MCP')
   .option('-d, --days <number>', 'Days to look back for papers', '7')
   .action(async (options) => {
     try {
         const tasks: Promise<void>[] = [];
         
-        // If no source flags provided, run all
-        const runAll = !options.rss && !options.papers;
+        // If no source flags provided, run all (default to RSS + legacy ADS if scix not specified?)
+        // Or maybe default to RSS + SciX if configured?
+        // For now, let's keep legacy behavior unless --scix is passed.
+        const runAll = !options.rss && !options.papers && !options.scix;
         
         if (runAll || options.rss) {
             tasks.push(Promise.resolve().then(async () => {
@@ -35,9 +39,15 @@ program.command('ingest')
                 await ingestRssFeeds();
             }));
         }
-        if (runAll || options.papers) {
+        
+        if (options.scix) {
+             tasks.push(Promise.resolve().then(async () => {
+                logger.info('Starting Paper ingestion (SciX MCP)...');
+                await ingestPapersFromScix(parseInt(options.days));
+            }));
+        } else if (runAll || options.papers) {
             tasks.push(Promise.resolve().then(async () => {
-                logger.info('Starting Paper ingestion...');
+                logger.info('Starting Paper ingestion (Legacy ADS)...');
                 await ingestRecentPapers(parseInt(options.days));
             }));
         }

@@ -11,6 +11,7 @@ export const PaperSchema = z.object({
   publication: z.string().optional(), // Journal or conference name
   url: z.string().optional(), // Link to ADS or publisher
   keywords: z.array(z.string()).optional(),
+  content: z.string().optional(), // Full text content
   
   // Metadata for our system
   source: z.literal('ads'),
