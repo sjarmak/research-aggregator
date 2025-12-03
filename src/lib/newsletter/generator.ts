@@ -76,8 +76,65 @@ export async function generateNewsletter(days: number = 7): Promise<string> {
     const INTERNAL_EXCLUSIONS = ['sourcegraph', 'amp', 'cody'];
     const COMPETITORS = ['codeium', 'coderabbit', 'cursor', 'augment', 'bloop', 'continue', 'nuance', 'hornet'];
 
+    // Helper to normalize titles for similarity matching (fuzzy deduplication)
+    const normalizeTitle = (title: string): string => {
+        return title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')  // Remove special chars
+            .replace(/\s+/g, ' ')           // Normalize whitespace
+            .trim();
+    };
+
+    // Helper to calculate simple string similarity (Jaccard similarity on words)
+    const calculateSimilarity = (str1: string, str2: string): number => {
+        const words1 = new Set(normalizeTitle(str1).split(/\s+/));
+        const words2 = new Set(normalizeTitle(str2).split(/\s+/));
+        const intersection = new Set([...words1].filter(w => words2.has(w)));
+        const union = new Set([...words1, ...words2]);
+        return intersection.size / union.size;
+    };
+
+    // Track seen items to deduplicate by title similarity (for syndicated stories)
+    const deduplicatedItems: typeof allItems = [];
+    const duplicatesLog: Array<{title: string; similarity: number; kept: boolean}> = [];
+    const SIMILARITY_THRESHOLD = 0.6; // 60% title overlap = likely same story
+    
+    for (const currentItem of allItems) {
+        const currentTitle = currentItem.item.title || '';
+        
+        // Check if this is a duplicate of something we've already seen
+        let isDuplicate = false;
+        for (const seenItem of deduplicatedItems) {
+            const similarity = calculateSimilarity(currentTitle, seenItem.item.title || '');
+            if (similarity >= SIMILARITY_THRESHOLD) {
+                // Keep the higher-scored item, discard the duplicate
+                if (currentItem.score > seenItem.score) {
+                    // Remove the previously added item and add this one instead
+                    const idx = deduplicatedItems.indexOf(seenItem);
+                    deduplicatedItems.splice(idx, 1);
+                    isDuplicate = false;
+                } else {
+                    isDuplicate = true;
+                }
+                duplicatesLog.push({ title: currentTitle, similarity, kept: !isDuplicate });
+                break;
+            }
+        }
+        
+        if (!isDuplicate) {
+            deduplicatedItems.push(currentItem);
+        }
+    }
+
+    if (duplicatesLog.length > 0) {
+        logger.info(`Deduplication found ${duplicatesLog.length} similar stories (threshold: ${SIMILARITY_THRESHOLD}):`, 
+            JSON.stringify(duplicatesLog.slice(0, 5)));
+    }
+    
+    logger.info(`Deduplicated ${allItems.length} items down to ${deduplicatedItems.length} (removed ${allItems.length - deduplicatedItems.length} redundant items)`);
+
     // First pass: bucket all items using feed metadata + pattern matching
-    for (const item of allItems) {
+    for (const item of deduplicatedItems) {
         const feedName = (item.item as any).feedName || '';
         const feed = feedName.toLowerCase();
         const url = item.item.url?.toLowerCase() || '';

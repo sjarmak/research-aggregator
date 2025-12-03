@@ -152,6 +152,18 @@ const FEED_METADATA: Record<string, FeedMetadata> = {
     newsCategory: 'ai_articles',
     priority: 2,
   },
+  'Latent Space': {
+    name: 'Latent Space',
+    inoreaderCategory: 'AI Articles',
+    newsCategory: 'ai_articles',
+    priority: 3,
+  },
+  'a16z Podcast': {
+    name: 'a16z Podcast',
+    inoreaderCategory: 'AI Articles',
+    newsCategory: 'ai_articles',
+    priority: 2,
+  },
 
   // Tech Company Blogs (General)
   'Engineering Blog – Databricks': {

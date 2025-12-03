@@ -72,10 +72,11 @@ STRICT RELEVANCE: Only score if discussion has CLEAR relevance to code search, d
     industry: `
 **INDUSTRY & TECH NEWS (Hacker News, InfoQ, etc.)**:
 STRICT RELEVANCE: Only score if news has DIRECT connection to code tooling, agents, context, or retrieval.
+IMPORTANT: Generic investment/funding news scores LOW (0-4) unless it specifically mentions code intelligence, developer tooling, or agent capabilities. Duplicate syndication of same story (e.g., from Reuters, ADWEEK, Yahoo) should be caught by deduplication and not appear multiple times.
 - **9-10**: Major innovation directly applicable to code intelligence, agents, or developer tooling
 - **7-8**: Strong technical advance relevant to code tooling, agents, or context management
 - **5-6**: Tech news with CLEAR relevance to code tools, retrieval, or agents (must apply to our focus)
-- **0-4**: General tech news without connection to code tooling, agents, or context management
+- **0-4**: General tech news, investment/funding without code/tooling angle, or low-signal content
 `,
     product: `
 **PRODUCT UPDATES & CHANGELOGS (GitHub, OpenAI, Anthropic, etc.)**:
@@ -95,12 +96,12 @@ STRICT RELEVANCE: Must be about code intelligence, developer tooling, agents, or
 `,
     ai_insights: `
 **AI INSIGHTS & ARCHITECTURE**:
-STRICT RELEVANCE: Only score if article has DIRECT connection to code/development tooling applications.
-Must relate to: LLM architectures for code agents, context management for coding, reasoning for software engineering, retrieval for code.
-- **9-10**: Breakthrough in LLM/agent architecture with CLEAR code tooling application
-- **7-8**: Strong relevance to code agents, context management, or reasoning for development
-- **5-6**: AI/LLM insight with CLEAR connection to code tooling (must apply to development)
-- **0-4**: General AI/LLM content without connection to code tooling or development applications
+RELEVANCE: Score articles about AI architectures, LLM systems, and agentic approaches applicable to software development.
+Must relate to: LLM architectures for code agents, context management for coding, reasoning over code, agentic systems, LLM scaling/training.
+- **9-10**: Breakthrough in LLM/agent architecture with DIRECT application to code tooling, agents, or developer experience (e.g., new context window techniques, retrieval for code)
+- **7-8**: Strong relevance to agents, LLM context management, reasoning approaches, or scaling applicable to development tools
+- **5-6**: AI/LLM architecture or trend with CLEAR relevance to developers or code understanding (e.g., reasoning techniques, agent patterns, context management strategies)
+- **0-4**: Generic AI/LLM news, investment/funding announcements, or model releases without clear developer/code connection
 `,
 };
 
