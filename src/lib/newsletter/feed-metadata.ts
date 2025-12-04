@@ -165,6 +165,64 @@ const FEED_METADATA: Record<string, FeedMetadata> = {
     priority: 2,
   },
 
+  // Competitive Intelligence (Code Intelligence, Developer Tools)
+  'Sourcegraph Blog': {
+    name: 'Sourcegraph Blog',
+    newsCategory: 'coding_product_updates',
+    priority: 4,
+  },
+  'CodeRabbit': {
+    name: 'CodeRabbit',
+    newsCategory: 'coding_product_updates',
+    priority: 3,
+  },
+
+  // RAG & Code Search Infrastructure
+  'Pinecone Blog': {
+    name: 'Pinecone Blog',
+    newsCategory: 'tech_company_blogs',
+    priority: 3,
+  },
+  'Weaviate Blog': {
+    name: 'Weaviate Blog',
+    newsCategory: 'tech_company_blogs',
+    priority: 3,
+  },
+  'Qdrant Blog': {
+    name: 'Qdrant Blog',
+    newsCategory: 'tech_company_blogs',
+    priority: 3,
+  },
+  'Elasticsearch Blog': {
+    name: 'Elasticsearch Blog',
+    newsCategory: 'tech_company_blogs',
+    priority: 3,
+  },
+  'Vespa Blog': {
+    name: 'Vespa Blog',
+    newsCategory: 'tech_company_blogs',
+    priority: 3,
+  },
+
+  // LLM/Agent Platforms
+  'LangChain Blog': {
+    name: 'LangChain Blog',
+    newsCategory: 'coding_product_updates',
+    priority: 3,
+  },
+  'LlamaIndex Blog': {
+    name: 'LlamaIndex Blog',
+    newsCategory: 'coding_product_updates',
+    priority: 3,
+  },
+
+  // Engineering & AI Blogs
+  'Chip Huyen': {
+    name: 'Chip Huyen',
+    newsCategory: 'ai_articles',
+    priority: 3,
+  },
+
   // Tech Company Blogs (General)
   'Engineering Blog – Databricks': {
     name: 'Databricks',
@@ -178,7 +236,7 @@ const FEED_METADATA: Record<string, FeedMetadata> = {
     newsCategory: 'tech_company_blogs',
     priority: 1,
   },
-};
+  };
 
 export function getFeedMetadata(feedName: string): FeedMetadata | undefined {
   // Exact match

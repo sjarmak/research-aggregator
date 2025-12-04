@@ -24,85 +24,27 @@ interface FeedConfig {
 }
 
 const RSS_FEEDS: FeedConfig[] = [
-    // A. Direct Competitors (AI Coding Agents)
-    /*
-    { 
-        name: 'Augment Code', 
-        url: 'https://www.augmentcode.com/blog', 
-        category: 'competitor_blog', 
-        company: 'Augment Code',
-        type: 'scraper',
-        scraperFn: scrapeAugmentCode
-    },
-    { 
-        name: 'Greptile', 
-        url: 'https://www.greptile.com/blog', 
-        category: 'competitor_blog', 
-        company: 'Greptile',
-        type: 'scraper',
-        scraperFn: scrapeGreptile
-    },
-    { 
-        name: 'CodeRabbit', 
-        url: 'https://www.coderabbit.ai/feed', 
-        category: 'competitor_blog', 
-        company: 'CodeRabbit' 
-    },
-    { 
-        name: 'Qodo', 
-        url: 'https://www.qodo.ai/blog/', 
-        category: 'competitor_blog', 
-        company: 'Qodo',
-        type: 'scraper',
-        scraperFn: scrapeQodo
-    },
-    { name: 'Hornet', url: 'https://blog.hornet.dev/rss.xml', category: 'competitor_blog', company: 'Hornet' },
-    { name: 'Sourcegraph', url: 'https://sourcegraph.com/blog/rss.xml', category: 'competitor_blog', company: 'Sourcegraph' },
-    { name: 'JetBrains AI', url: 'https://blog.jetbrains.com/ai/feed/', category: 'competitor_blog', company: 'JetBrains' },
-    */
+    // A. Direct Competitors (AI Coding Agents) - CRITICAL for competitive intelligence
+    { name: 'Sourcegraph Blog', url: 'https://sourcegraph.com/blog/rss.xml', category: 'competitor_blog', company: 'Sourcegraph' },
+    { name: 'CodeRabbit', url: 'https://www.coderabbit.ai/feed', category: 'competitor_blog', company: 'CodeRabbit' },
     
     // B. Platform + Ecosystem DevTools
     { name: 'GitHub Blog', url: 'http://github.com/blog.atom', category: 'platform_blog', company: 'GitHub' },
-    /*
-    { name: 'GitLab Blog', url: 'https://about.gitlab.com/atom.xml', category: 'platform_blog', company: 'GitLab' },
-    */
     { name: 'OpenAI News', url: 'https://openai.com/news/rss.xml', category: 'platform_blog', company: 'OpenAI' },
-    /*
-    { name: 'LangChain Blog', url: 'https://blog.langchain.dev/rss/', category: 'platform_blog', company: 'LangChain' },
-    { name: 'LlamaIndex Blog', url: 'https://www.llamaindex.ai/blog/rss.xml', category: 'platform_blog', company: 'LlamaIndex' },
-    { name: 'Pinecone Blog', url: 'https://www.pinecone.io/feed.xml', category: 'platform_blog', company: 'Pinecone' },
-    { name: 'Anthropic Research', url: 'https://www.anthropic.com/index.xml', category: 'platform_blog', company: 'Anthropic' },
-    { name: 'Google DeepMind', url: 'https://deepmind.google/discover/blog/rss.xml', category: 'platform_blog', company: 'Google' },
-    { name: 'AWS Machine Learning', url: 'https://aws.amazon.com/blogs/machine-learning/feed/', category: 'platform_blog', company: 'AWS' },
-    { name: 'Microsoft Research', url: 'https://www.microsoft.com/en-us/research/feed/', category: 'platform_blog', company: 'Microsoft' },
-    */
+    { name: 'Anthropic News', url: 'https://www.anthropic.com/index.xml', category: 'platform_blog', company: 'Anthropic' },
 
-    // C. Retrieval / RAG Infra / Tooling
-    /*
+    // C. Retrieval / RAG Infra / Tooling - CRITICAL for code search & context
     { name: 'Weaviate Blog', url: 'https://weaviate.io/blog/rss.xml', category: 'infra_blog', company: 'Weaviate' },
-    { name: 'Qdrant Blog', url: 'https://qdrant.tech/blog/rss.xml', category: 'infra_blog', company: 'Qdrant' }, 
-    { name: 'Elasticsearch Blog', url: 'https://www.elastic.co/blog/feed', category: 'infra_blog', company: 'Elastic' }, // Main blog
-    { name: 'Elastic Search Labs', url: 'https://www.elastic.co/search-labs/rss/feed', category: 'infra_blog', company: 'Elastic' }, // Technical/RAG specific
-    { name: 'Supabase Blog', url: 'https://supabase.com/blog/rss.xml', category: 'infra_blog', company: 'Supabase' },
+    { name: 'Elasticsearch Blog', url: 'https://www.elastic.co/blog/feed', category: 'infra_blog', company: 'Elastic' },
     { name: 'Vespa Blog', url: 'https://blog.vespa.ai/feed.xml', category: 'infra_blog', company: 'Vespa' },
-    */
 
     // D. AI Engineering & Thought Leadership (High Signal)
     { name: 'Latent Space', url: 'https://latent.space/feed', category: 'engineering_blog' },
     { name: 'Eugene Yan', url: 'https://eugeneyan.com/rss/', category: 'engineering_blog', company: 'Eugene Yan' },
-    /*
     { name: 'Chip Huyen', url: 'https://huyenchip.com/feed.xml', category: 'engineering_blog', company: 'Chip Huyen' },
-    // { name: 'Towards AI', url: 'https://pub.towardsai.net/feed', category: 'engineering_blog' }, // Cloudflare blocked
-    { name: 'DataScienceDojo', url: 'https://datasciencedojo.com/blog/feed/', category: 'engineering_blog' },
-    */
 
     // E. Curated AI/ML + DevTools RSS Bundles
-    /*
     { name: 'Hacker News', url: 'https://news.ycombinator.com/rss', category: 'curated_ai' },
-    */
-    /*
-    { name: 'Lobste.rs', url: 'https://lobste.rs/rss', category: 'curated_ai' },
-    */
     
     // F. Newsletters
     { name: 'Pragmatic Engineer', url: 'https://newsletter.pragmaticengineer.com/feed', category: 'curated_ai', company: 'Pragmatic Engineer' },
@@ -113,16 +55,6 @@ const RSS_FEEDS: FeedConfig[] = [
         type: 'scraper',
         scraperFn: scrapeTLDR 
     },
-    /*
-    /*
-    {
-        name: 'Programming Digest',
-        url: 'https://programmingdigest.net/newsletters',
-        category: 'curated_ai',
-        type: 'scraper',
-        scraperFn: scrapeProgrammingDigest
-    }
-    */
 ];
 
 // 3. Classification Configuration
