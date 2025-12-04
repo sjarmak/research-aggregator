@@ -1,5 +1,35 @@
 # Project Guidelines
 
+## Curation & Scoring System
+
+### Hybrid Scoring (Term + LLM)
+Newsletter articles are scored using a hybrid system combining:
+- **LLM evaluation (70%)**: Claude rates 0-10 for relevance to code tooling, agents, context management
+- **Heuristic terms (30%)**: Keyword matching across 8 weighted domain categories
+
+**Key categories** (highest to lowest weight):
+1. Information Retrieval (1.5x): semantic search, embeddings, RAG, vector databases
+2. Context Management (1.5x): context windows, token budgets, compression
+3. Code Search (1.6x): code indexing, intelligence, codebase search
+4. Agentic Workflows (1.4x): agents, planning, tool use, orchestration
+5. Enterprise Codebases (1.3x): monorepo, dependency management, scale
+6. Developer Tools (1.2x): IDE, debugging, refactoring, productivity
+7. LLM Code Architecture (1.2x): transformers, fine-tuning, reasoning
+8. SDLC Processes (1.0x): CI/CD, testing, code review
+
+**Formula**: `(LLM × 0.7) + (Terms × 0.3) × BoostFactor`
+- BoostFactor: 1.0-1.5x based on multi-category matches and term count
+- Rescues niche code content from low LLM scores
+- Penalizes generic articles despite high LLM rating
+
+**Benefits**:
+- Encodes domain expertise in term weights
+- Reduces false positives (generic investment news)
+- Catches articles LLM misses
+- Transparent scoring in reasoning field shows: `[Term match: {category}, confidence: {score}]`
+
+See `history/hybrid-scoring-system.md` for full documentation and test results.
+
 ## Build/Lint/Test Commands
 *No build system detected.*
 
