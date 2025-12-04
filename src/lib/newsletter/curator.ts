@@ -1,6 +1,7 @@
 import { generateCompletion } from '../llm/client.js';
 import { KnowledgeItem } from '../store/schema.js';
 import { logger } from '../logger.js';
+import { hybridScore, logTermScoreDebug } from './term-scorer.js';
 
 export interface ScoredItem {
     id: string;
@@ -284,10 +285,18 @@ ${JSON.stringify(batchInput, null, 2)}
                     for (const rating of parsed.ratings) {
                         const original = batch.find(i => i.id === rating.id);
                         if (original) {
+                            // Apply hybrid scoring: combine LLM score with heuristic term matching
+                            const summary = (original as any).summary || (original as any).content?.slice(0, 500) || '';
+                            const tags = (original as any).tags || [];
+                            const hybrid = hybridScore(rating.score, original.title, summary, tags);
+                            
+                            // Use hybrid score for final rating (adjusts LLM score with term confidence)
+                            const finalScore = hybrid.finalScore;
+
                             results.push({
                                 id: original.id,
-                                score: rating.score,
-                                reasoning: rating.reasoning,
+                                score: finalScore,
+                                reasoning: `${rating.reasoning} [Term match: ${hybrid.breakdown.termCategory}, confidence: ${(hybrid.breakdown.termScore / 10).toFixed(2)}]`,
                                 item: original
                             });
                         }
